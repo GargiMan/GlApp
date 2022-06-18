@@ -1,11 +1,7 @@
 package com.glong;
 
 import android.annotation.SuppressLint;
-
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.os.Build;
+import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +10,12 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ComponentActivity;
+
+import com.glong.bluetooth.Bluetooth;
+import com.glong.bluetooth.BluetoothListener;
 import com.glong.databinding.ActivityFullscreenBinding;
 
 /**
@@ -82,7 +84,7 @@ public class FullscreenActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_UP:
                     view.performClick();
 
-                    //INFO custom button press commands
+                    //INFO custom actions
 
                     break;
                 default:
@@ -193,4 +195,10 @@ public class FullscreenActivity extends AppCompatActivity {
 
         mBackPressed = System.currentTimeMillis();
     }
+
+    private final BluetoothListener mBluetoothListener = new BluetoothListener() {
+
+        //Bluetooth btcomm = new Bluetooth(this, this);
+
+    };
 }
