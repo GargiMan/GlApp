@@ -195,10 +195,4 @@ public class FullscreenActivity extends AppCompatActivity {
 
         mBackPressed = System.currentTimeMillis();
     }
-
-    private final BluetoothListener mBluetoothListener = new BluetoothListener() {
-
-        //Bluetooth btcomm = new Bluetooth(this, this);
-
-    };
 }
