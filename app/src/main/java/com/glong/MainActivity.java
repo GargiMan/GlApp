@@ -1,9 +1,12 @@
 package com.glong;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,17 +15,15 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ComponentActivity;
 
 import com.glong.bluetooth.Bluetooth;
-import com.glong.bluetooth.BluetoothListener;
 import com.glong.databinding.ActivityFullscreenBinding;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class FullscreenActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -48,10 +49,11 @@ public class FullscreenActivity extends AppCompatActivity {
         @Override
         public void run() {
             // Delayed removal of status and navigation bar , API 30+
-            mContentView.getWindowInsetsController()
-                    .hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+            mContentView.getWindowInsetsController().hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
         }
     };
+
+    Bluetooth mBluetooth;
 
     private View mControlsView;
     private final Runnable mShowPart2Runnable = new Runnable() {
@@ -85,7 +87,7 @@ public class FullscreenActivity extends AppCompatActivity {
                     view.performClick();
 
                     //INFO custom actions
-
+                    mBluetoothService.enable();
                     break;
                 default:
                     break;
@@ -94,6 +96,29 @@ public class FullscreenActivity extends AppCompatActivity {
         }
     };
     private ActivityFullscreenBinding binding;
+
+
+    private BluetoothService mBluetoothService;
+    /**
+     * Bluetooth service connection
+     */
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
+            mBluetoothService = binder.getService();
+            mBluetoothService.setup(MainActivity.this);
+            //Toast.makeText(MainActivity.this, "Service connected", Toast.LENGTH_SHORT).show();
+
+            binding.fullscreenContent.setText(getResources().getString(R.string.bt_service_ready));
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            //Toast.makeText(MainActivity.this, "Service disconnected", Toast.LENGTH_SHORT).show();
+        }
+    };
 
     private static final int CLICK_TIME_INTERVAL = 500; // # milliseconds, desired time passed between two clicks
     private long clickedFirst; // last time clicked
@@ -121,6 +146,10 @@ public class FullscreenActivity extends AppCompatActivity {
             }
         });
 
+        Intent bluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
+        startService(bluetoothServiceIntent);
+        bindService(bluetoothServiceIntent, serviceConnection, BIND_AUTO_CREATE);
+
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
@@ -134,7 +163,13 @@ public class FullscreenActivity extends AppCompatActivity {
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
         // are available.
-        delayedHide(100);
+        //delayedHide(100);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(serviceConnection);
     }
 
     private void toggle() {
@@ -179,20 +214,21 @@ public class FullscreenActivity extends AppCompatActivity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
-    public static final int BACK_TIME_INTERVAL = 2000; // # milliseconds, desired time passed between two back presses
-    private long mBackPressed = 0; // # milliseconds, last time pressed back button
+    public static final int EXIT_TIME_THRESHOLD = 2000;
+    private long firstTimeBackPressed = 0;
+
     /**
      * App exiting method using back button (twice)
      */
     @Override
     public void onBackPressed() {
-        if (mBackPressed + BACK_TIME_INTERVAL > System.currentTimeMillis()) {
+        if (firstTimeBackPressed + EXIT_TIME_THRESHOLD > System.currentTimeMillis()) {
             super.onBackPressed();
             return;
         } else {
             Toast.makeText(getBaseContext(), "Press back again to exit", Toast.LENGTH_SHORT).show();
         }
 
-        mBackPressed = System.currentTimeMillis();
+        firstTimeBackPressed = System.currentTimeMillis();
     }
 }

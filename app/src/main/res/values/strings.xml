@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">GLong</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="connect">Connect</string>
+    <string name="bt_service_ready">Bluetooth service ready</string>
 </resources>

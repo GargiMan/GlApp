@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.glong">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!--BT-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!--BLE-->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
 
     <application
         android:allowBackup="true"
@@ -19,7 +22,7 @@
         android:theme="@style/Theme.GLong">
 
         <activity
-            android:name=".FullscreenActivity"
+            android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
             android:theme="@style/Theme.GLong.Fullscreen">
@@ -29,6 +32,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".BluetoothService"
+            android:enabled="true"
+            android:exported="false"> <!-- false - only for this app -->
+
+        </service>
     </application>
 
 </manifest>
