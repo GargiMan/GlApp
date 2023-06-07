@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
@@ -16,7 +17,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.glong.bluetooth.Bluetooth;
 import com.glong.databinding.ActivityFullscreenBinding;
 
 /**
@@ -24,6 +24,8 @@ import com.glong.databinding.ActivityFullscreenBinding;
  * status bar and navigation/system bar) with user interaction.
  */
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = MainActivity.class.getSimpleName();
     /**
      * Whether or not the system UI should be auto-hidden after
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
      * and a change of the status and navigation bar.
      */
     private static final int UI_ANIMATION_DELAY = 300;
+
     private final Handler mHideHandler = new Handler(Looper.myLooper());
 
     private View mContentView;
@@ -52,8 +55,6 @@ public class MainActivity extends AppCompatActivity {
             mContentView.getWindowInsetsController().hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
         }
     };
-
-    Bluetooth mBluetooth;
 
     private View mControlsView;
     private final Runnable mShowPart2Runnable = new Runnable() {
@@ -69,36 +70,12 @@ public class MainActivity extends AppCompatActivity {
     };
     private boolean mVisible;
     private final Runnable mHideRunnable = this::hide;
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-            switch (motionEvent.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (AUTO_HIDE) {
-                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
-                    }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    view.performClick();
-
-                    //INFO custom actions
-                    mBluetoothService.enable();
-                    break;
-                default:
-                    break;
-            }
-            return false;
-        }
-    };
     private ActivityFullscreenBinding binding;
 
 
+    private static final String BT_DEVICE_NAME = "GlBoard";
     private BluetoothService mBluetoothService;
+
     /**
      * Bluetooth service connection
      */
@@ -108,15 +85,18 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
             mBluetoothService = binder.getService();
-            mBluetoothService.setup(MainActivity.this);
-            //Toast.makeText(MainActivity.this, "Service connected", Toast.LENGTH_SHORT).show();
+            mBluetoothService.start(MainActivity.this);
 
             binding.fullscreenContent.setText(getResources().getString(R.string.bt_service_ready));
+
+            //Toast.makeText(MainActivity.this, "Service connected", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Service connected");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             //Toast.makeText(MainActivity.this, "Service disconnected", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Service disconnected");
         }
     };
 
@@ -135,17 +115,15 @@ public class MainActivity extends AppCompatActivity {
         mContentView = binding.fullscreenContent;
 
         // Set up the user interaction to manually show or hide the system UI.
-        mContentView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (clickedFirst + CLICK_TIME_INTERVAL > System.currentTimeMillis()) {
-                    toggle();
-                    return;
-                }
-                clickedFirst = System.currentTimeMillis();
+        mContentView.setOnClickListener(view -> {
+            if (clickedFirst + CLICK_TIME_INTERVAL > System.currentTimeMillis()) {
+                toggle();
+                return;
             }
+            clickedFirst = System.currentTimeMillis();
         });
 
+        //Bluetooth service setup
         Intent bluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
         startService(bluetoothServiceIntent);
         bindService(bluetoothServiceIntent, serviceConnection, BIND_AUTO_CREATE);
@@ -153,7 +131,34 @@ public class MainActivity extends AppCompatActivity {
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
-        binding.dummyButton.setOnTouchListener(mDelayHideTouchListener);    // button touch listener
+
+        /**
+         * Touch listener to use for in-layout UI controls to delay hiding the
+         * system UI. This is to prevent the jarring behavior of controls going away
+         * while interacting with activity UI.
+         */
+        binding.dummyButton.setOnTouchListener((view, motionEvent) -> {
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (AUTO_HIDE) {
+                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    view.performClick();
+
+                    //INFO custom actions
+                    if (mBluetoothService.isEnabled()) {
+                        mBluetoothService.connect(BT_DEVICE_NAME);
+                    } else {
+                        mBluetoothService.enable();
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        });
     }
 
     @Override
@@ -214,8 +219,8 @@ public class MainActivity extends AppCompatActivity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
-    public static final int EXIT_TIME_THRESHOLD = 2000;
-    private long firstTimeBackPressed = 0;
+    public static final long EXIT_TIME_THRESHOLD = 2000; //time delta between two back presses
+    private long firstTimeBackPressed = 0;              //time of first back press
 
     /**
      * App exiting method using back button (twice)

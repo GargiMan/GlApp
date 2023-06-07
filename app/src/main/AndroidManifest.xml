@@ -2,9 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--BT hardware required-->
+    <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
+    <!--BLE hardware required-->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+
+    <!--older devices-->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <!--for already paired devices-->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!--for scanning devices-->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <!--for making device discoverable-->
+    <!--<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>-->
     <!--BT-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <!--BLE-->
