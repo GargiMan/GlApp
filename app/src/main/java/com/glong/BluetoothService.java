@@ -71,8 +71,10 @@ public class BluetoothService extends Service {
      * Needs to be called before any other method
      * @param context Activity context
      */
-    public void start(Context context) {
+    public void init(Context context, Handler handler) {
         mContext = context;
+        mHandler = handler;
+
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)) {
             mBluetoothManager = (BluetoothManager) mContext.getSystemService(BLUETOOTH_SERVICE);
             mBluetoothAdapter = mBluetoothManager.getAdapter();
@@ -92,6 +94,13 @@ public class BluetoothService extends Service {
         }
 
         requestPermissions();
+        registerBluetoothStateReceiver(BluetoothAdapter.ACTION_STATE_CHANGED, true);
+
+        if (isEnabled()) {
+            mHandler.obtainMessage(BluetoothConstants.ENABLED).sendToTarget();
+        } else {
+            mHandler.obtainMessage(BluetoothConstants.DISABLED).sendToTarget();
+        }
     }
 
     /**
@@ -130,6 +139,10 @@ public class BluetoothService extends Service {
         return mBluetoothAdapter.isEnabled();
     }
 
+    public boolean isConnected() {
+        return mConnectedThread != null && mConnectedThread.isAlive();
+    }
+
     public void enable() {
         if (isEnabled()) return;
 
@@ -138,7 +151,6 @@ public class BluetoothService extends Service {
             return;
         }
 
-        unregisterBluetoothStateReceiver();
         registerBluetoothStateReceiver(BluetoothAdapter.ACTION_STATE_CHANGED, true);
         mBluetoothAdapter.enable();
 
@@ -196,24 +208,45 @@ public class BluetoothService extends Service {
 
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions();
+            mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
             return;
         }
 
         BluetoothDevice device = getPairedDevice(deviceName);
-        if (device == null) return;
+        if (device == null) {
+            mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
+            return;
+        }
 
-        try {
-            mBluetoothSocket = device.createRfcommSocketToServiceRecord(UUID_SERVICE);
-            mBluetoothSocket.connect();
-            mBluetoothSocket.close();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create socket");
-            e.printStackTrace();
+        if (isConnected() && mConnectThread.getDevice().equals(device)) {
+            mHandler.obtainMessage(BluetoothConstants.CONNECTED).sendToTarget();
+            return;
         }
 
         mConnectThread = new ConnectThread(device);
-        //TODO needed ?
-        //mConnectThread.start();
+        mConnectThread.start();
+    }
+
+    public void send(String message) {
+        if (!isEnabled()) return;
+
+        if (mConnectedThread == null) {
+            Log.e(TAG, "No connection");
+            return;
+        }
+
+        if (message.length() > 255) {
+            Log.e(TAG, "Message too long");
+            return;
+        }
+
+        //INFO message structure: <node type><message length><message>
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(MessageStructure.NODE_SLAVE);
+        stringBuilder.append((char)(message.length()));
+        stringBuilder.append(message);
+
+        mConnectedThread.write(stringBuilder.toString().getBytes());
     }
 
     private final BroadcastReceiver mBluetoothStateReceiver = new BroadcastReceiver() {
@@ -235,6 +268,7 @@ public class BluetoothService extends Service {
                             case BluetoothAdapter.STATE_ON:
                                 Log.i(TAG, "Bluetooth enabled");
                                 //Toast.makeText(mContext, "Bluetooth enabled", Toast.LENGTH_SHORT).show();
+                                mHandler.obtainMessage(BluetoothConstants.ENABLED).sendToTarget();
                                 break;
                             case BluetoothAdapter.STATE_TURNING_OFF:
                                 Log.i(TAG, "Bluetooth turning off");
@@ -243,6 +277,7 @@ public class BluetoothService extends Service {
                             case BluetoothAdapter.STATE_OFF:
                                 Log.i(TAG, "Bluetooth disabled");
                                 //Toast.makeText(mContext, "Bluetooth disabled", Toast.LENGTH_SHORT).show();
+                                mHandler.obtainMessage(BluetoothConstants.DISABLED).sendToTarget();
                                 break;
                         }
                         break;
@@ -279,11 +314,11 @@ public class BluetoothService extends Service {
     public void onDestroy() {
         super.onDestroy();
         unregisterBluetoothStateReceiver();
-        stop();
+        disconnect();
     }
 
     //stop bluetooth
-    public void stop() {
+    public void disconnect() {
         if (mConnectThread != null) {
             mConnectThread.cancel();
             mConnectThread = null;
@@ -292,6 +327,29 @@ public class BluetoothService extends Service {
             mConnectedThread.cancel();
             mConnectedThread = null;
         }
+        mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
+    }
+
+    private Handler mHandler;
+
+    public interface MessageStructure {
+        char NODE_MASTER = 0x00;
+        char NODE_SLAVE = 0x01;
+    }
+
+    public interface BluetoothConstants {
+        int ERROR = -1;
+        int NOT_SUPPORTED = 0;
+        int ENABLED = 1;
+        int DISABLED = 2;
+        int CONNECTED = 3;
+        int DISCONNECTED = 4;
+        int MESSAGE_RECEIVED = 5;
+        int MESSAGE_SENT = 6;
+        int MESSAGE_TOAST = 7;
+        int MESSAGE_ERROR = 8;
+        int DISCOVERABLE_REQUEST = 9;
+        int PERMISSION_REQUEST = 10;
     }
 
     // INFO website to example
@@ -301,6 +359,10 @@ public class BluetoothService extends Service {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
+        /**
+         * Create socket to remote device
+         * @param device remote device
+         */
         public ConnectThread(BluetoothDevice device) {
             if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 //TODO check if this works
@@ -332,6 +394,7 @@ public class BluetoothService extends Service {
         public void run() {
             if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions();
+                mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
                 return;
             }
             mBluetoothAdapter.cancelDiscovery();
@@ -347,10 +410,14 @@ public class BluetoothService extends Service {
                     Log.e(TAG, "Failed to close socket");
                     closeException.printStackTrace();
                 }
+                mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
                 return;
             }
 
             mConnectedThread = new ConnectedThread(mmSocket);
+            mConnectedThread.start();
+
+            mHandler.obtainMessage(BluetoothConstants.CONNECTED).sendToTarget();
         }
 
         /**
@@ -363,15 +430,10 @@ public class BluetoothService extends Service {
                 Log.e("", "Could not close the client socket", e);
             }
         }
-    }
 
-    private Handler handler;
-    // Defines several constants used when transmitting messages between the
-    // service and the UI.
-    private interface MessageConstants {
-        int MESSAGE_READ = 0;
-        int MESSAGE_WRITE = 1;
-        int MESSAGE_TOAST = 2;
+        public BluetoothDevice getDevice() {
+            return mmDevice;
+        }
     }
 
     // INFO website to example
@@ -382,6 +444,10 @@ public class BluetoothService extends Service {
         private final OutputStream mmOutStream;
         private byte[] mmBuffer; // mmBuffer store for the stream
 
+        /**
+         * Get input and output stream
+         * @param socket socket to remote device
+         */
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
             InputStream tmpIn = null;
@@ -404,6 +470,9 @@ public class BluetoothService extends Service {
             mmOutStream = tmpOut;
         }
 
+        /**
+         * Listen to input stream in loop
+         */
         public void run() {
             mmBuffer = new byte[1024];
             int numBytes; // bytes returned from read()
@@ -411,44 +480,44 @@ public class BluetoothService extends Service {
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    // Read from the InputStream.
                     numBytes = mmInStream.read(mmBuffer);
                     // Send the obtained bytes to the UI activity.
-                    Message readMsg = handler.obtainMessage(
-                            MessageConstants.MESSAGE_READ, numBytes, -1,
-                            mmBuffer);
-                    readMsg.sendToTarget();
+                    mHandler.obtainMessage(BluetoothConstants.MESSAGE_RECEIVED, numBytes, -1, mmBuffer).sendToTarget();
                 } catch (IOException e) {
+                    mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
                     Log.d("", "Input stream was disconnected", e);
                     break;
                 }
             }
         }
 
-        // Call this from the main activity to send data to the remote device.
+        /**
+         * Write to output stream,
+         * Called to send data to the remote device
+         * @param bytes bytes to write
+         */
         public void write(byte[] bytes) {
             try {
                 mmOutStream.write(bytes);
-
                 // Share the sent message with the UI activity.
-                Message writtenMsg = handler.obtainMessage(
-                        MessageConstants.MESSAGE_WRITE, -1, -1, mmBuffer);
-                writtenMsg.sendToTarget();
+                mHandler.obtainMessage(BluetoothConstants.MESSAGE_SENT, -1, -1, mmBuffer).sendToTarget();
             } catch (IOException e) {
                 Log.e("", "Error occurred when sending data", e);
 
                 // Send a failure message back to the activity.
                 Message writeErrorMsg =
-                        handler.obtainMessage(MessageConstants.MESSAGE_TOAST);
+                        mHandler.obtainMessage(BluetoothConstants.MESSAGE_TOAST);
                 Bundle bundle = new Bundle();
                 bundle.putString("toast",
                         "Couldn't send data to the other device");
                 writeErrorMsg.setData(bundle);
-                handler.sendMessage(writeErrorMsg);
+                mHandler.sendMessage(writeErrorMsg);
             }
         }
 
-        // Call this method from the main activity to shut down the connection.
+        /**
+         * Close connected socket
+         */
         public void cancel() {
             try {
                 mmSocket.close();

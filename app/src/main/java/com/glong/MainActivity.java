@@ -73,6 +73,53 @@ public class MainActivity extends AppCompatActivity {
     private ActivityFullscreenBinding binding;
 
 
+    public final Handler mHandler = new Handler(Looper.myLooper()) {
+        @Override
+        public void handleMessage(android.os.Message msg) {
+            switch (msg.what) {
+                case BluetoothService.BluetoothConstants.MESSAGE_RECEIVED:
+                    String str = new String((byte[]) msg.obj);
+                    Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
+                    break;
+                case BluetoothService.BluetoothConstants.MESSAGE_SENT:
+                    break;
+                case BluetoothService.BluetoothConstants.MESSAGE_TOAST:
+                    break;
+                case BluetoothService.BluetoothConstants.ENABLED:
+                    binding.sendButton.setEnabled(false);
+                    binding.connectButton.setText("Connect");
+                    binding.connectButton.setEnabled(true);
+                    binding.connectButton.setVisibility(View.VISIBLE);
+                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    break;
+                case BluetoothService.BluetoothConstants.DISABLED:
+                    binding.sendButton.setEnabled(false);
+                    binding.connectButton.setText("Enable Bluetooth");
+                    binding.connectButton.setEnabled(true);
+                    binding.connectButton.setVisibility(View.VISIBLE);
+                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    break;
+                case BluetoothService.BluetoothConstants.CONNECTED:
+                    binding.sendButton.setEnabled(true);
+                    binding.connectButton.setText("Disconnect");
+                    binding.connectButton.setEnabled(true);
+                    binding.connectButton.setVisibility(View.VISIBLE);
+                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    break;
+                case BluetoothService.BluetoothConstants.DISCONNECTED:
+                    binding.sendButton.setEnabled(false);
+                    binding.connectButton.setText("Connect");
+                    binding.connectButton.setEnabled(true);
+                    binding.connectButton.setVisibility(View.VISIBLE);
+                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    break;
+                default:
+                    super.handleMessage(msg);
+                    break;
+            }
+        }
+    };
+
     private static final String BT_DEVICE_NAME = "GlBoard";
     private BluetoothService mBluetoothService;
 
@@ -85,10 +132,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
             mBluetoothService = binder.getService();
-            mBluetoothService.start(MainActivity.this);
-
-            binding.fullscreenContent.setText(getResources().getString(R.string.bt_service_ready));
-
+            mBluetoothService.init(MainActivity.this, mHandler);
             //Toast.makeText(MainActivity.this, "Service connected", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Service connected");
         }
@@ -132,12 +176,47 @@ public class MainActivity extends AppCompatActivity {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
 
+        //binding.fullscreenContent.setText(getResources().getString(R.string.bt_service_ready));
+
         /**
          * Touch listener to use for in-layout UI controls to delay hiding the
          * system UI. This is to prevent the jarring behavior of controls going away
          * while interacting with activity UI.
          */
-        binding.dummyButton.setOnTouchListener((view, motionEvent) -> {
+        binding.connectButton.setOnTouchListener((view, motionEvent) -> {
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (AUTO_HIDE) {
+                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    view.performClick();
+                    binding.connectButton.setEnabled(false);
+
+                    new Handler(getMainLooper()).postDelayed(() -> {
+                        if (binding.connectButton.isEnabled()) return;
+                        binding.connectButton.setVisibility(View.GONE);
+                        binding.connectButtonLoading.setVisibility(View.VISIBLE);
+                    }, 200);
+
+                    //INFO custom actions
+                    if (mBluetoothService.isEnabled()) {
+                        if (mBluetoothService.isConnected()) {
+                            mBluetoothService.disconnect();
+                        } else {
+                            mBluetoothService.connect(BT_DEVICE_NAME);
+                        }
+                    } else {
+                        mBluetoothService.enable();
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        });
+        binding.sendButton.setOnTouchListener((view, motionEvent) -> {
             switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     if (AUTO_HIDE) {
@@ -148,10 +227,10 @@ public class MainActivity extends AppCompatActivity {
                     view.performClick();
 
                     //INFO custom actions
-                    if (mBluetoothService.isEnabled()) {
-                        mBluetoothService.connect(BT_DEVICE_NAME);
+                    if (mBluetoothService.isConnected()) {
+                        mBluetoothService.send("data values");
                     } else {
-                        mBluetoothService.enable();
+                        Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
                     }
                     break;
                 default:
