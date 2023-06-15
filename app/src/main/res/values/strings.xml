@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">GLong</string>
-    <string name="send">Send</string>
+    <string name="welcome_message">Connect to board</string>
     <string name="bluetooth">Bluetooth</string>
     <string name="bt_service_ready">Bluetooth service ready</string>
+    <string name="press_back_again_to_exit">Press back again to exit</string>
+    <string name="ready">Ready</string>
 </resources>

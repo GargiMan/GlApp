@@ -227,7 +227,7 @@ public class BluetoothService extends Service {
         mConnectThread.start();
     }
 
-    public void send(String message) {
+    public void send(byte[] message) {
         if (!isEnabled()) return;
 
         if (mConnectedThread == null) {
@@ -235,18 +235,18 @@ public class BluetoothService extends Service {
             return;
         }
 
-        if (message.length() > 255) {
+        if (message.length > 255) {
             Log.e(TAG, "Message too long");
             return;
         }
 
         //INFO message structure: <node type><message length><message>
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(MessageStructure.NODE_SLAVE);
-        stringBuilder.append((char)(message.length()));
-        stringBuilder.append(message);
+        byte[] bytes = new byte[message.length + 2];
+        bytes[0] = MessageStructure.NODE_SLAVE;
+        bytes[1] = (byte) message.length;
+        System.arraycopy(message, 0, bytes, 2, message.length);
 
-        mConnectedThread.write(stringBuilder.toString().getBytes());
+        mConnectedThread.write(bytes);
     }
 
     private final BroadcastReceiver mBluetoothStateReceiver = new BroadcastReceiver() {

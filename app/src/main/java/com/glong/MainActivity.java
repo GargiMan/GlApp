@@ -86,35 +86,31 @@ public class MainActivity extends AppCompatActivity {
                 case BluetoothService.BluetoothConstants.MESSAGE_TOAST:
                     break;
                 case BluetoothService.BluetoothConstants.ENABLED:
-                    binding.sendButton.setEnabled(false);
+                case BluetoothService.BluetoothConstants.DISCONNECTED:
+                    updateDisplayText(getResources().getString(R.string.welcome_message));
                     binding.connectButton.setText("Connect");
                     binding.connectButton.setEnabled(true);
                     binding.connectButton.setVisibility(View.VISIBLE);
                     binding.connectButtonLoading.setVisibility(View.GONE);
+                    binding.fullscreenContent.setOnTouchListener(null);
                     break;
                 case BluetoothService.BluetoothConstants.DISABLED:
-                    binding.sendButton.setEnabled(false);
+                    updateDisplayText(getResources().getString(R.string.welcome_message));
                     binding.connectButton.setText("Enable Bluetooth");
                     binding.connectButton.setEnabled(true);
                     binding.connectButton.setVisibility(View.VISIBLE);
                     binding.connectButtonLoading.setVisibility(View.GONE);
                     break;
                 case BluetoothService.BluetoothConstants.CONNECTED:
-                    binding.sendButton.setEnabled(true);
+                    updateDisplayText(getResources().getString(R.string.ready));
                     binding.connectButton.setText("Disconnect");
                     binding.connectButton.setEnabled(true);
                     binding.connectButton.setVisibility(View.VISIBLE);
                     binding.connectButtonLoading.setVisibility(View.GONE);
-                    break;
-                case BluetoothService.BluetoothConstants.DISCONNECTED:
-                    binding.sendButton.setEnabled(false);
-                    binding.connectButton.setText("Connect");
-                    binding.connectButton.setEnabled(true);
-                    binding.connectButton.setVisibility(View.VISIBLE);
-                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    binding.fullscreenContent.setOnTouchListener(driveController);
                     break;
                 default:
-                    super.handleMessage(msg);
+                    Log.e(TAG, "Unknown message type received"+msg.what+" "+msg.obj+" "+msg.arg1+" "+msg.arg2);
                     break;
             }
         }
@@ -172,72 +168,8 @@ public class MainActivity extends AppCompatActivity {
         startService(bluetoothServiceIntent);
         bindService(bluetoothServiceIntent, serviceConnection, BIND_AUTO_CREATE);
 
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
-
-        //binding.fullscreenContent.setText(getResources().getString(R.string.bt_service_ready));
-
-        /**
-         * Touch listener to use for in-layout UI controls to delay hiding the
-         * system UI. This is to prevent the jarring behavior of controls going away
-         * while interacting with activity UI.
-         */
-        binding.connectButton.setOnTouchListener((view, motionEvent) -> {
-            switch (motionEvent.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (AUTO_HIDE) {
-                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
-                    }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    view.performClick();
-                    binding.connectButton.setEnabled(false);
-
-                    new Handler(getMainLooper()).postDelayed(() -> {
-                        if (binding.connectButton.isEnabled()) return;
-                        binding.connectButton.setVisibility(View.GONE);
-                        binding.connectButtonLoading.setVisibility(View.VISIBLE);
-                    }, 200);
-
-                    //INFO custom actions
-                    if (mBluetoothService.isEnabled()) {
-                        if (mBluetoothService.isConnected()) {
-                            mBluetoothService.disconnect();
-                        } else {
-                            mBluetoothService.connect(BT_DEVICE_NAME);
-                        }
-                    } else {
-                        mBluetoothService.enable();
-                    }
-                    break;
-                default:
-                    break;
-            }
-            return false;
-        });
-        binding.sendButton.setOnTouchListener((view, motionEvent) -> {
-            switch (motionEvent.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (AUTO_HIDE) {
-                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
-                    }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    view.performClick();
-
-                    //INFO custom actions
-                    if (mBluetoothService.isConnected()) {
-                        mBluetoothService.send("data values");
-                    } else {
-                        Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
-                    }
-                    break;
-                default:
-                    break;
-            }
-            return false;
-        });
+        //Controllers setup
+        binding.connectButton.setOnTouchListener(connectController);
     }
 
     @Override
@@ -302,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
     private long firstTimeBackPressed = 0;              //time of first back press
 
     /**
-     * App exiting method using back button (twice)
+     * Double back press to exit
      */
     @Override
     public void onBackPressed() {
@@ -310,9 +242,145 @@ public class MainActivity extends AppCompatActivity {
             super.onBackPressed();
             return;
         } else {
-            Toast.makeText(getBaseContext(), "Press back again to exit", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getResources().getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show();
         }
 
         firstTimeBackPressed = System.currentTimeMillis();
     }
+
+    private void updateDisplayText(String text) {
+        binding.fullscreenContent.setText(text);
+    }
+
+    //////////////////////////////// CONTROLS ////////////////////////////////
+
+    private static final double MAX_CONTROL_RANGE = 0.4; // 40% height of screen is control size
+
+    private static final double START_DEAD_ZONE = 0.1; // 10% of power is start dead zone (power 10 and lower is 0)
+
+    private final View.OnTouchListener driveController = new View.OnTouchListener() {
+
+        int power;
+        private boolean started = false;
+        private float touchPosStart, touchPosNow;
+        private final static int SEND_INTERVAL = 100; //ms
+        private final Handler sendingHandler = new Handler(Looper.myLooper());
+        private final Runnable sendingLoop = new Runnable() {
+            @Override
+            public void run() {
+                mBluetoothService.send(new byte[]{(byte)power});
+
+                sendingHandler.postDelayed(this, SEND_INTERVAL); // Run the task again after 100 milliseconds
+            }
+        };
+
+        private double getScreenHeight() {
+            return getWindowManager().getCurrentWindowMetrics().getBounds().height();
+        }
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+
+            if (!mBluetoothService.isConnected()) {
+                view.performClick();
+                Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    //set start touch position
+                    touchPosStart = event.getY();
+                    Log.d("","start -> y: " + touchPosStart);
+                    return false;
+                case MotionEvent.ACTION_UP:
+                    if (!started) return false;
+
+                    //reset power and dead zone
+                    power = 0;
+                    started = false;
+                    Log.d("","start -> " + touchPosStart + " now -> " + touchPosNow + " power -> " + power);
+
+                    //send power and reset display text
+                    updateDisplayText(getResources().getString(R.string.ready));
+                    mBluetoothService.send(new byte[]{(byte)power});
+
+                    //stop sending loop
+                    sendingHandler.removeCallbacks(sendingLoop);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    //set current touch position
+                    touchPosNow = event.getY();
+
+                    //calculate power
+                    power = (int)((touchPosStart - touchPosNow) / (getScreenHeight() * MAX_CONTROL_RANGE / 2f) * 100f);
+
+                    //limit power and move zone
+                    if (power > 100) {
+                        power = 100;
+                        touchPosStart = (float) (touchPosNow + (getScreenHeight() * MAX_CONTROL_RANGE / 2f));
+                    } else if (power < -100) {
+                        power = -100;
+                        touchPosStart = (float) (touchPosNow - (getScreenHeight() * MAX_CONTROL_RANGE / 2f));
+                    }
+                    Log.d("","start -> " + touchPosStart + " now -> " + touchPosNow + " power -> " + power);
+
+                    //dead zone
+                    if (power < START_DEAD_ZONE * 100 && power > -START_DEAD_ZONE * 100) {
+                        if (!started) break;
+                    } else {
+                        started = true;
+                    }
+
+                    //send power and update display
+                    updateDisplayText(String.valueOf(power));
+                    mBluetoothService.send(new byte[]{(byte)power});
+
+                    //start/reset sending loop
+                    sendingHandler.removeCallbacks(sendingLoop);
+                    sendingHandler.postDelayed(sendingLoop, SEND_INTERVAL);
+                    break;
+                default:
+                    break;
+            }
+            return true;
+        }
+    };
+
+    private final View.OnTouchListener connectController = new View.OnTouchListener() {
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (AUTO_HIDE) {
+                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    view.performClick();
+                    binding.connectButton.setEnabled(false);
+
+                    new Handler(getMainLooper()).postDelayed(() -> {
+                        if (binding.connectButton.isEnabled() || mBluetoothService.isConnected()) return;
+                        binding.connectButton.setVisibility(View.GONE);
+                        binding.connectButtonLoading.setVisibility(View.VISIBLE);
+                    }, 200);
+
+                    if (mBluetoothService.isEnabled()) {
+                        if (mBluetoothService.isConnected()) {
+                            mBluetoothService.disconnect();
+                        } else {
+                            mBluetoothService.connect(BT_DEVICE_NAME);
+                        }
+                    } else {
+                        mBluetoothService.enable();
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return true;
+        }
+    };
 }
