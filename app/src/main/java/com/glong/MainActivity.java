@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             // Delayed display of UI elements
             ActionBar actionBar = getSupportActionBar();
             if (actionBar != null) {
-                actionBar.show();
+                //actionBar.show();
             }
             mControlsView.setVisibility(View.VISIBLE);
         }
@@ -79,7 +79,12 @@ public class MainActivity extends AppCompatActivity {
             switch (msg.what) {
                 case BluetoothService.BluetoothConstants.MESSAGE_RECEIVED:
                     String str = new String((byte[]) msg.obj);
-                    Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
+                    if (str.charAt(0) != BluetoothService.MessageStructure.NODE_MASTER) {
+                        Log.e(TAG, "Received message from unknown node: " + str);
+                        break;
+                    }
+                    binding.fullscreenInfo.setText(str.substring(2, 2 + str.charAt(1)) + " V");
                     break;
                 case BluetoothService.BluetoothConstants.MESSAGE_SENT:
                     break;
@@ -93,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
                     binding.connectButton.setVisibility(View.VISIBLE);
                     binding.connectButtonLoading.setVisibility(View.GONE);
                     binding.fullscreenContent.setOnTouchListener(null);
+                    binding.fullscreenInfo.setText("");
                     break;
                 case BluetoothService.BluetoothConstants.DISABLED:
                     updateDisplayText(getResources().getString(R.string.welcome_message));
@@ -239,6 +245,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (firstTimeBackPressed + EXIT_TIME_THRESHOLD > System.currentTimeMillis()) {
+            if (mBluetoothService != null) {
+                mBluetoothService.disconnect();
+            }
             super.onBackPressed();
             return;
         } else {
@@ -331,6 +340,10 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         started = true;
                     }
+
+                    //INFO temp
+                    //round power (reduce power wobble)
+                    power = (int)(Math.round(power / 10.0) * 10);
 
                     //send power and update display
                     updateDisplayText(String.valueOf(power));

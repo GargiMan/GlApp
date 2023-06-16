@@ -66,6 +66,17 @@ public class BluetoothService extends Service {
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
 
+    private BluetoothState mState, mNewState;
+
+    enum BluetoothState {
+        STATE_NONE,
+        STATE_ENABLED,
+        STATE_CONNECTING,
+        STATE_CONNECTED,
+        STATE_DISCONNECTED,
+        STATE_ERROR
+    }
+
     /**
      * Initialize BluetoothService with context (Activity),
      * Needs to be called before any other method
@@ -312,9 +323,9 @@ public class BluetoothService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        unregisterBluetoothStateReceiver();
         disconnect();
+        unregisterBluetoothStateReceiver();
+        super.onDestroy();
     }
 
     //stop bluetooth
@@ -327,14 +338,16 @@ public class BluetoothService extends Service {
             mConnectedThread.cancel();
             mConnectedThread = null;
         }
-        mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
+        if (mHandler != null) {
+            mHandler.obtainMessage(BluetoothConstants.DISCONNECTED).sendToTarget();
+        }
     }
 
     private Handler mHandler;
 
     public interface MessageStructure {
-        char NODE_MASTER = 0x00;
-        char NODE_SLAVE = 0x01;
+        char NODE_MASTER = 0x01;
+        char NODE_SLAVE = 0x02;
     }
 
     public interface BluetoothConstants {
@@ -442,7 +455,6 @@ public class BluetoothService extends Service {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        private byte[] mmBuffer; // mmBuffer store for the stream
 
         /**
          * Get input and output stream
@@ -474,13 +486,11 @@ public class BluetoothService extends Service {
          * Listen to input stream in loop
          */
         public void run() {
-            mmBuffer = new byte[1024];
-            int numBytes; // bytes returned from read()
-
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    numBytes = mmInStream.read(mmBuffer);
+                    byte[] mmBuffer = new byte[1024];
+                    int numBytes = mmInStream.read(mmBuffer);
                     // Send the obtained bytes to the UI activity.
                     mHandler.obtainMessage(BluetoothConstants.MESSAGE_RECEIVED, numBytes, -1, mmBuffer).sendToTarget();
                 } catch (IOException e) {
@@ -500,7 +510,7 @@ public class BluetoothService extends Service {
             try {
                 mmOutStream.write(bytes);
                 // Share the sent message with the UI activity.
-                mHandler.obtainMessage(BluetoothConstants.MESSAGE_SENT, -1, -1, mmBuffer).sendToTarget();
+                mHandler.obtainMessage(BluetoothConstants.MESSAGE_SENT, -1, -1, bytes).sendToTarget();
             } catch (IOException e) {
                 Log.e("", "Error occurred when sending data", e);
 
