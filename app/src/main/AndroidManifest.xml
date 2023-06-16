@@ -30,13 +30,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GLong">
+        android:theme="@style/Theme.GlApp">
 
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
-            android:theme="@style/Theme.GLong.Fullscreen">
+            android:theme="@style/Theme.GlApp.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
