@@ -1,4 +1,4 @@
-package com.glong;
+package com.glapp;
 
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
@@ -17,7 +17,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.glong.databinding.ActivityFullscreenBinding;
+import com.glapp.databinding.ActivityFullscreenBinding;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.

@@ -28,7 +28,7 @@ android {
     buildFeatures {
         viewBinding true
     }
-    namespace 'com.glong'
+    namespace 'com.glapp'
 }
 
 dependencies {

@@ -1,4 +1,4 @@
-package com.glong;
+package com.glapp;
 
 import android.Manifest;
 import android.app.Activity;
