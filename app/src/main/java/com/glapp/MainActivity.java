@@ -1,5 +1,6 @@
 package com.glapp;
 
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -9,15 +10,20 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.content.res.AppCompatResources;
 
-import com.glapp.databinding.ActivityFullscreenBinding;
+import com.glapp.databinding.MainActivityBinding;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -63,14 +69,14 @@ public class MainActivity extends AppCompatActivity {
             // Delayed display of UI elements
             ActionBar actionBar = getSupportActionBar();
             if (actionBar != null) {
-                //actionBar.show();
+                actionBar.show();
             }
             mControlsView.setVisibility(View.VISIBLE);
         }
     };
     private boolean mVisible;
     private final Runnable mHideRunnable = this::hide;
-    private ActivityFullscreenBinding binding;
+    private MainActivityBinding binding;
 
 
     public final Handler mHandler = new Handler(Looper.myLooper()) {
@@ -84,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.e(TAG, "Received message from unknown node: " + str);
                         break;
                     }
-                    binding.fullscreenInfo.setText(str.substring(2, 2 + str.charAt(1)) + " V");
+                    binding.boardData.setText(str.substring(2, 2 + str.charAt(1)) + " V");
                     break;
                 case BluetoothService.BluetoothConstants.MESSAGE_SENT:
                     break;
@@ -92,28 +98,38 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case BluetoothService.BluetoothConstants.ENABLED:
                 case BluetoothService.BluetoothConstants.DISCONNECTED:
-                    updateDisplayText(getResources().getString(R.string.welcome_message));
-                    binding.connectButton.setText("Connect");
+                    binding.connectButton.setText(R.string.connect);
                     binding.connectButton.setEnabled(true);
-                    binding.connectButton.setVisibility(View.VISIBLE);
-                    binding.connectButtonLoading.setVisibility(View.GONE);
-                    binding.fullscreenContent.setOnTouchListener(null);
-                    binding.fullscreenInfo.setText("");
+                    binding.fullscreenContentLoading.setVisibility(View.GONE);
+                    binding.fullscreenContent.setText(R.string.connect_to_board);
+                    binding.fullscreenContent.setVisibility(View.VISIBLE);
+                    binding.boardData.setText("");
+                    getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_disconnected);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.connect));
+                    getMenu().findItem(R.id.app_bar_direction).setVisible(false);
                     break;
                 case BluetoothService.BluetoothConstants.DISABLED:
-                    updateDisplayText(getResources().getString(R.string.welcome_message));
-                    binding.connectButton.setText("Enable Bluetooth");
+                    binding.connectButton.setText(R.string.enable_bluetooth);
                     binding.connectButton.setEnabled(true);
-                    binding.connectButton.setVisibility(View.VISIBLE);
-                    binding.connectButtonLoading.setVisibility(View.GONE);
+                    binding.fullscreenContentLoading.setVisibility(View.GONE);
+                    binding.fullscreenContent.setVisibility(View.VISIBLE);
+                    binding.fullscreenContent.setText(R.string.enable_bluetooth);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_disconnected);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.enable_bluetooth));
+                    getMenu().findItem(R.id.app_bar_direction).setVisible(false);
                     break;
                 case BluetoothService.BluetoothConstants.CONNECTED:
-                    updateDisplayText(getResources().getString(R.string.ready));
-                    binding.connectButton.setText("Disconnect");
+                    binding.connectButton.setText(R.string.disconnect);
                     binding.connectButton.setEnabled(true);
-                    binding.connectButton.setVisibility(View.VISIBLE);
-                    binding.connectButtonLoading.setVisibility(View.GONE);
-                    binding.fullscreenContent.setOnTouchListener(driveController);
+                    binding.fullscreenContentLoading.setVisibility(View.GONE);
+                    binding.fullscreenContent.setVisibility(View.VISIBLE);
+                    binding.fullscreenContent.setText(R.string.ready);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
+                    getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.disconnect));
+                    getMenu().findItem(R.id.app_bar_direction).setVisible(true);
                     break;
                 default:
                     Log.e(TAG, "Unknown message type received"+msg.what+" "+msg.obj+" "+msg.arg1+" "+msg.arg2);
@@ -122,7 +138,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private static final String BT_DEVICE_NAME = "GlBoard";
     private BluetoothService mBluetoothService;
 
     /**
@@ -146,28 +161,16 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private static final int CLICK_TIME_INTERVAL = 500; // # milliseconds, desired time passed between two clicks
-    private long clickedFirst; // last time clicked
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityFullscreenBinding.inflate(getLayoutInflater());
+        binding = MainActivityBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         mVisible = true;
         mControlsView = binding.fullscreenContentControls;
         mContentView = binding.fullscreenContent;
-
-        // Set up the user interaction to manually show or hide the system UI.
-        mContentView.setOnClickListener(view -> {
-            if (clickedFirst + CLICK_TIME_INTERVAL > System.currentTimeMillis()) {
-                toggle();
-                return;
-            }
-            clickedFirst = System.currentTimeMillis();
-        });
 
         //Bluetooth service setup
         Intent bluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
@@ -176,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Controllers setup
         binding.connectButton.setOnTouchListener(connectController);
+        binding.fullscreenContent.setOnTouchListener(driveController);
     }
 
     @Override
@@ -208,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.hide();
         }
+
         mControlsView.setVisibility(View.GONE);
         mVisible = false;
 
@@ -251,14 +256,110 @@ public class MainActivity extends AppCompatActivity {
             super.onBackPressed();
             return;
         } else {
-            Toast.makeText(this, getResources().getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT).show();
         }
 
         firstTimeBackPressed = System.currentTimeMillis();
     }
 
-    private void updateDisplayText(String text) {
-        binding.fullscreenContent.setText(text);
+    private Menu menu = null;
+
+    public Menu getMenu() {
+        return menu;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        this.menu = menu;
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        // change icon for bluetooth menu item
+        if (mBluetoothService != null && mBluetoothService.isConnected()) {
+            menu.findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
+        }
+
+        MenuItem item = menu.findItem(R.id.app_bar_direction);
+        item.getActionView().setOnClickListener(v -> onOptionsItemSelected(menu.findItem(R.id.app_bar_direction)));
+        ((ImageView) item.getActionView()).setImageDrawable(AppCompatResources.getDrawable(this, R.drawable.ic_direction));
+        item.getActionView().setPadding(10, 10, 10, 10);
+        return true;
+    }
+
+    //true = forward, false = backward
+    private boolean direction = true;
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) { switch(item.getItemId()) {
+        case R.id.app_bar_direction:
+
+            if (item.getActionView().getRotation() % 180 != 0) return true;
+
+            ObjectAnimator rotationAnimator = ObjectAnimator.ofFloat(item.getActionView(), "rotation", item.getActionView().getRotation(), item.getActionView().getRotation()+180f);
+            rotationAnimator.setDuration(300);
+            rotationAnimator.setInterpolator(new LinearInterpolator());
+            rotationAnimator.start();
+
+            direction = !direction;
+
+            return(true);
+
+        case R.id.app_bar_bluetooth:
+
+            item.setEnabled(false);
+
+            bluetoothServiceController();
+
+            return(true);
+
+        case R.id.app_bar_settings:
+
+            startActivity(new Intent(this, SettingsActivity.class));
+
+            return(true);
+    }
+        return(super.onOptionsItemSelected(item));
+    }
+
+    //////////////////////////////// BLUETOOTH ////////////////////////////////
+
+    private static final String BT_DEVICE_NAME = "GlBoard";
+
+    /**
+     * Bluetooth service connection flow controller
+     */
+    void bluetoothServiceController() {
+        if (mBluetoothService == null) {
+            return;
+        }
+
+        if (mBluetoothService.isEnabled()) {
+            if (mBluetoothService.isConnected()) {
+                mBluetoothService.disconnect();
+
+                new Handler(getMainLooper()).postDelayed(() -> {
+                    if (!mBluetoothService.isConnected()) return;
+                    binding.fullscreenContent.setVisibility(View.GONE);
+                    binding.fullscreenContentLoading.setVisibility(View.VISIBLE);
+                }, 200);
+
+            } else {
+                mBluetoothService.connect(BT_DEVICE_NAME);
+
+                new Handler(getMainLooper()).postDelayed(() -> {
+                    if (mBluetoothService.isConnected()) return;
+                    binding.fullscreenContent.setVisibility(View.GONE);
+                    binding.fullscreenContentLoading.setVisibility(View.VISIBLE);
+                }, 200);
+            }
+        } else {
+            mBluetoothService.enable();
+
+            new Handler(getMainLooper()).postDelayed(() -> {
+                if (mBluetoothService.isEnabled()) return;
+                binding.fullscreenContent.setVisibility(View.GONE);
+                binding.fullscreenContentLoading.setVisibility(View.VISIBLE);
+            }, 200);
+        }
     }
 
     //////////////////////////////// CONTROLS ////////////////////////////////
@@ -272,16 +373,21 @@ public class MainActivity extends AppCompatActivity {
         int power;
         private boolean started = false;
         private float touchPosStart, touchPosNow;
+        private long touchTimeStart, touchTimeFirst;
+        private static final int DOUBLE_CLICK_TIME_THRESHOLD = 250; // ms
+        private final static long CLICK_TIME_THRESHOLD = 200; //ms
         private final static int SEND_INTERVAL = 100; //ms
         private final Handler sendingHandler = new Handler(Looper.myLooper());
         private final Runnable sendingLoop = new Runnable() {
             @Override
             public void run() {
                 mBluetoothService.send(new byte[]{(byte)power});
-
                 sendingHandler.postDelayed(this, SEND_INTERVAL); // Run the task again after 100 milliseconds
             }
         };
+
+        private final Handler clickHandler = new Handler(Looper.myLooper());
+        private final Runnable clickRunnable = () -> bluetoothServiceController();
 
         private double getScreenHeight() {
             return getWindowManager().getCurrentWindowMetrics().getBounds().height();
@@ -290,20 +396,31 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean onTouch(View view, MotionEvent event) {
 
-            if (!mBluetoothService.isConnected()) {
-                view.performClick();
-                Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    touchTimeStart = System.currentTimeMillis();
                     //set start touch position
                     touchPosStart = event.getY();
-                    Log.d("","start -> y: " + touchPosStart);
-                    return false;
+                    return true;
                 case MotionEvent.ACTION_UP:
-                    if (!started) return false;
+
+                    if (!started) {
+
+                        // Set up the user interaction to manually show or hide the system UI.
+                        if (touchTimeFirst + DOUBLE_CLICK_TIME_THRESHOLD > System.currentTimeMillis()) {
+                            clickHandler.removeCallbacks(clickRunnable);
+                            toggle();
+                            return true;
+                        }
+                        touchTimeFirst = System.currentTimeMillis();
+
+                        if (touchTimeStart + CLICK_TIME_THRESHOLD > System.currentTimeMillis()) {
+                            clickHandler.postDelayed(clickRunnable, DOUBLE_CLICK_TIME_THRESHOLD);
+                            view.performClick();
+                        }
+
+                        return true;
+                    }
 
                     //reset power and dead zone
                     power = 0;
@@ -311,13 +428,20 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("","start -> " + touchPosStart + " now -> " + touchPosNow + " power -> " + power);
 
                     //send power and reset display text
-                    updateDisplayText(getResources().getString(R.string.ready));
+                    binding.fullscreenContent.setText(R.string.ready);
                     mBluetoothService.send(new byte[]{(byte)power});
 
                     //stop sending loop
                     sendingHandler.removeCallbacks(sendingLoop);
                     break;
                 case MotionEvent.ACTION_MOVE:
+
+                    if (!mBluetoothService.isConnected()) {
+                        //view.performClick();
+                        //Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+
                     //set current touch position
                     touchPosNow = event.getY();
 
@@ -346,12 +470,13 @@ public class MainActivity extends AppCompatActivity {
                     power = (int)(Math.round(power / 10.0) * 10);
 
                     //send power and update display
-                    updateDisplayText(String.valueOf(power));
+                    binding.fullscreenContent.setText(String.valueOf(power));
                     mBluetoothService.send(new byte[]{(byte)power});
+                    //Integer.toBinaryString(power).replaceFirst("^.*(.{8})$","$1")
 
                     //start/reset sending loop
                     sendingHandler.removeCallbacks(sendingLoop);
-                    sendingHandler.postDelayed(sendingLoop, SEND_INTERVAL);
+                    sendingHandler.post(sendingLoop);
                     break;
                 default:
                     break;
@@ -372,23 +497,11 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case MotionEvent.ACTION_UP:
                     view.performClick();
+
                     binding.connectButton.setEnabled(false);
 
-                    new Handler(getMainLooper()).postDelayed(() -> {
-                        if (binding.connectButton.isEnabled() || mBluetoothService.isConnected()) return;
-                        binding.connectButton.setVisibility(View.GONE);
-                        binding.connectButtonLoading.setVisibility(View.VISIBLE);
-                    }, 200);
+                    bluetoothServiceController();
 
-                    if (mBluetoothService.isEnabled()) {
-                        if (mBluetoothService.isConnected()) {
-                            mBluetoothService.disconnect();
-                        } else {
-                            mBluetoothService.connect(BT_DEVICE_NAME);
-                        }
-                    } else {
-                        mBluetoothService.enable();
-                    }
                     break;
                 default:
                     break;

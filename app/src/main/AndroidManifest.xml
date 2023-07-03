@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
-    <!--BT hardware required-->
-    <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
-    <!--BLE hardware required-->
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
-
-    <!--older devices-->
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <!--for already paired devices-->
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    <!--for scanning devices-->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
-    <!--for making device discoverable-->
-    <!--<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>-->
-    <!--BT-->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <!--BLE-->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-
+    <!-- BT hardware required -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="true" /> <!-- BLE hardware required -->
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" /> <!-- older devices -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> <!-- for already paired devices -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> <!-- for scanning devices -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" /> <!-- for making device discoverable -->
+    <!-- <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/> -->
+    <!-- BT -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- BLE -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
+        android:appCategory="accessibility"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -33,9 +29,15 @@
         android:theme="@style/Theme.GlApp">
 
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings">
+        </activity>
+
+        <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true"
+            android:configChanges="orientation|keyboardHidden|screenSize"
             android:theme="@style/Theme.GlApp.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -46,9 +48,7 @@
 
         <service
             android:name=".BluetoothService"
-            android:enabled="true"
-            android:exported="false"> <!-- false - only for this app -->
-
+            android:exported="false">
         </service>
     </application>
 

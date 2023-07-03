@@ -1,0 +1,53 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory app:title="@string/connection">
+
+        <SwitchPreferenceCompat
+            app:key="connect_on_app_start"
+            app:title="@string/connect_on_app_start" />
+
+        <EditTextPreference
+            app:key="bluetooth_ssid_of_board"
+            app:title="@string/bluetooth_ssid_of_board"
+            app:defaultValue="@string/board_name"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/board">
+
+        <SeekBarPreference
+            app:key="power"
+            android:min="1"
+            android:max="20"
+            app:showSeekBarValue="true"
+            app:summary="Max power"
+            app:title="Amps" />
+
+        <SwitchPreferenceCompat
+            app:key="attachment"
+            app:summaryOff="@string/attachment_summary_off"
+            app:summaryOn="@string/attachment_summary_on"
+            app:title="@string/attachment_title" />
+
+        <ListPreference
+            app:key="reply"
+            app:defaultValue="reply"
+            app:entries="@array/reply_entries"
+            app:entryValues="@array/reply_values"
+            app:title="@string/reply_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/general">
+
+        <Preference
+            app:key="reset"
+            app:title="Reset settings"/>
+    </PreferenceCategory>
+
+
+</PreferenceScreen>
