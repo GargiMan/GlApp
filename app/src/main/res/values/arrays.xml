@@ -1,12 +1,24 @@
 <resources>
-    <!-- Reply Preference -->
-    <string-array name="reply_entries">
-        <item>Reply</item>
-        <item>Reply to all</item>
+    <string-array name="board_data_entries">
+        <item>Voltage</item>
+        <item>Current</item>
+        <item>Duty</item>
+        <item>Speed</item>
+        <item>RPM</item>
+        <item>Temperature</item>
     </string-array>
 
-    <string-array name="reply_values">
-        <item>reply</item>
-        <item>reply_all</item>
+    <string-array name="board_data_values">
+        <item>voltage</item>
+        <item>current</item>
+        <item>duty</item>
+        <item>speed</item>
+        <item>rpm</item>
+        <item>temperature</item>
+    </string-array>
+
+    <string-array name="board_data_values_default">
+        <item>voltage</item>
+        <item>current</item>
     </string-array>
 </resources>
