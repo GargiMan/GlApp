@@ -32,6 +32,7 @@ import androidx.preference.PreferenceManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
 
@@ -70,9 +71,21 @@ public class BluetoothService extends Service {
     private State mState, mNewState;
     private Handler mHandler;
 
-    public interface MessageStructure {
+    private interface MessageStructure {
         char NODE_MASTER = 0x01;
         char NODE_SLAVE = 0x02;
+    }
+
+    public static class Data {
+        float avgMotorCurrent;
+        float avgInputCurrent;
+        float dutyCycleNow;
+        long rpm;
+        float inpVoltage;
+        float ampHours;
+        float ampHoursCharged;
+        long tachometer;
+        long tachometerAbs;
     }
 
     public interface MSG_WHAT {
@@ -82,7 +95,7 @@ public class BluetoothService extends Service {
         int MESSAGE_TOAST = 3;
     }
 
-    enum State {
+    public enum State {
         NONE,
         NOT_SUPPORTED,
         ENABLED,
@@ -509,8 +522,49 @@ public class BluetoothService extends Service {
                 try {
                     byte[] mmBuffer = new byte[1024];
                     int numBytes = mmInStream.read(mmBuffer);
+
+                    if (numBytes < 2) {
+                        Log.e(TAG, "Message too short");
+                        continue;
+                    }
+
+                    if (mmBuffer[0] != BluetoothService.MessageStructure.NODE_MASTER) {
+                        Log.e(TAG, "Unknown message received (wrong node type)");
+                        //Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
+                        continue;
+                    }
+
+                    // Payload length must be 38 bytes (2 bytes for header, 36 bytes for data)
+                    if (mmBuffer[1] != numBytes - 2 || mmBuffer[1] != 38) {
+                        Log.e(TAG, "Message payload length mismatch");
+                        continue;
+                    }
+
+                    int startIndex = 2;
+                    byte[] subArray = new byte[4];
+
+                    Data data = new Data();
+                    System.arraycopy(mmBuffer, startIndex, subArray, 0, 4);
+                    data.avgMotorCurrent = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 4, subArray, 0, 4);
+                    data.avgInputCurrent = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 8, subArray, 0, 4);
+                    data.dutyCycleNow = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 12, subArray, 0, 4);
+                    data.rpm = ByteBuffer.wrap(subArray).getLong();
+                    System.arraycopy(mmBuffer, startIndex + 16, subArray, 0, 4);
+                    data.inpVoltage = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 20, subArray, 0, 4);
+                    data.ampHours = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 24, subArray, 0, 4);
+                    data.ampHoursCharged = ByteBuffer.wrap(subArray).getFloat();
+                    System.arraycopy(mmBuffer, startIndex + 28, subArray, 0, 4);
+                    data.tachometer = ByteBuffer.wrap(subArray).getLong();
+                    System.arraycopy(mmBuffer, startIndex + 32, subArray, 0, 4);
+                    data.tachometerAbs = ByteBuffer.wrap(subArray).getLong();
+
                     // Send the obtained bytes to the UI activity.
-                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, numBytes, -1, mmBuffer).sendToTarget();
+                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, data).sendToTarget();
                 } catch (IOException e) {
                     mHandler.obtainMessage(MSG_WHAT.STATUS, BluetoothService.State.DISCONNECTED).sendToTarget();
                     Log.d(TAG, "Input stream was disconnected", e);

@@ -1,24 +1,30 @@
 <resources>
     <string-array name="board_data_entries">
-        <item>Voltage</item>
-        <item>Current</item>
-        <item>Duty</item>
-        <item>Speed</item>
-        <item>RPM</item>
-        <item>Temperature</item>
+        <item>Average Motor Current</item>
+        <item>Average Input Current</item>
+        <item>Duty Cycle Now</item>
+        <item>Rpm</item>
+        <item>Input Voltage</item>
+        <item>AmpHours</item>
+        <item>AmpHoursCharged</item>
+        <item>Tachometer</item>
+        <item>Tachometer (absolute)</item>
     </string-array>
 
     <string-array name="board_data_values">
-        <item>voltage</item>
-        <item>current</item>
-        <item>duty</item>
-        <item>speed</item>
+        <item>avgMotorCurrent</item>
+        <item>avgInputCurrent</item>
+        <item>dutyCycleNow</item>
         <item>rpm</item>
-        <item>temperature</item>
+        <item>inpVoltage</item>
+        <item>ampHours</item>
+        <item>ampHoursCharged</item>
+        <item>tachometer</item>
+        <item>tachometerAbs</item>
     </string-array>
 
     <string-array name="board_data_values_default">
-        <item>voltage</item>
-        <item>current</item>
+        <item>inpVoltage</item>
+        <item>avgMotorCurrent</item>
     </string-array>
 </resources>

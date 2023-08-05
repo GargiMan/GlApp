@@ -22,8 +22,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
+import androidx.preference.PreferenceManager;
 
 import com.glapp.databinding.MainActivityBinding;
+
+import java.util.Set;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -84,21 +87,51 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(android.os.Message msg) {
             switch (msg.what) {
                 case BluetoothService.MSG_WHAT.MESSAGE_RECEIVED:
-                    String str = new String((byte[]) msg.obj);
-                    //Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
-                    if (str.charAt(0) != BluetoothService.MessageStructure.NODE_MASTER) {
-                        Log.e(TAG, "Received message from unknown node: " + str);
-                        break;
+                    BluetoothService.Data data = (BluetoothService.Data) msg.obj;
+
+                    String str = "";
+                    Set<String> dataToShow = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getStringSet("board_data", null);
+                    if (dataToShow == null) break;
+
+                    if (dataToShow.contains("avgMotorCurrent")) {
+                        str += data.avgMotorCurrent + " A\n";
                     }
-                    binding.boardData.setText(str.substring(2, 2 + str.charAt(1)) + " V");
+                    if (dataToShow.contains("avgInputCurrent")) {
+                        str += data.avgInputCurrent + " A\n";
+                    }
+                    if (dataToShow.contains("dutyCycleNow")) {
+                        str += data.dutyCycleNow + " %\n";
+                    }
+                    if (dataToShow.contains("rpm")) {
+                        str += data.rpm + " rpm\n";
+                    }
+                    if (dataToShow.contains("inpVoltage")) {
+                        str += data.inpVoltage + " V\n";
+                    }
+                    if (dataToShow.contains("ampHours")) {
+                        str += data.ampHours + " Ah\n";
+                    }
+                    if (dataToShow.contains("ampHoursCharged")) {
+                        str += data.ampHoursCharged + " Ah\n";
+                    }
+                    if (dataToShow.contains("tachometer")) {
+                        str += data.tachometer + " rot\n";
+                    }
+                    if (dataToShow.contains("tachometerAbs")) {
+                        str += data.tachometerAbs + " rot\n";
+                    }
+                    binding.boardData.setText(str);
                     break;
+
                 case BluetoothService.MSG_WHAT.MESSAGE_SENT:
                     break;
+
                 case BluetoothService.MSG_WHAT.MESSAGE_TOAST:
                     if (msg.getData() != null) {
                         Toast.makeText(MainActivity.this, msg.getData().getString("toast"), Toast.LENGTH_SHORT).show();
                     }
                     break;
+
                 case BluetoothService.MSG_WHAT.STATUS:
                     switch ((BluetoothService.State) msg.obj) {
                         case ENABLED:
