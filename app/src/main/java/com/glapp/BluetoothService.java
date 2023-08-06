@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Set;
 import java.util.UUID;
 
@@ -80,12 +81,12 @@ public class BluetoothService extends Service {
         float avgMotorCurrent;
         float avgInputCurrent;
         float dutyCycleNow;
-        long rpm;
+        int rpm;
         float inpVoltage;
         float ampHours;
         float ampHoursCharged;
-        long tachometer;
-        long tachometerAbs;
+        int tachometer;
+        int tachometerAbs;
     }
 
     public interface MSG_WHAT {
@@ -520,7 +521,7 @@ public class BluetoothService extends Service {
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    byte[] mmBuffer = new byte[1024];
+                    byte[] mmBuffer = new byte[38];
                     int numBytes = mmInStream.read(mmBuffer);
 
                     if (numBytes < 2) {
@@ -535,33 +536,24 @@ public class BluetoothService extends Service {
                     }
 
                     // Payload length must be 38 bytes (2 bytes for header, 36 bytes for data)
-                    if (mmBuffer[1] != numBytes - 2 || mmBuffer[1] != 38) {
+                    if (mmBuffer[1] != numBytes - 2 || numBytes != 38) {
                         Log.e(TAG, "Message payload length mismatch");
                         continue;
                     }
 
-                    int startIndex = 2;
-                    byte[] subArray = new byte[4];
+                    int startIndex = 2, dataIndex = 0;
 
+                    ByteBuffer buffer = ByteBuffer.wrap(mmBuffer).order(ByteOrder.LITTLE_ENDIAN);
                     Data data = new Data();
-                    System.arraycopy(mmBuffer, startIndex, subArray, 0, 4);
-                    data.avgMotorCurrent = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 4, subArray, 0, 4);
-                    data.avgInputCurrent = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 8, subArray, 0, 4);
-                    data.dutyCycleNow = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 12, subArray, 0, 4);
-                    data.rpm = ByteBuffer.wrap(subArray).getLong();
-                    System.arraycopy(mmBuffer, startIndex + 16, subArray, 0, 4);
-                    data.inpVoltage = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 20, subArray, 0, 4);
-                    data.ampHours = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 24, subArray, 0, 4);
-                    data.ampHoursCharged = ByteBuffer.wrap(subArray).getFloat();
-                    System.arraycopy(mmBuffer, startIndex + 28, subArray, 0, 4);
-                    data.tachometer = ByteBuffer.wrap(subArray).getLong();
-                    System.arraycopy(mmBuffer, startIndex + 32, subArray, 0, 4);
-                    data.tachometerAbs = ByteBuffer.wrap(subArray).getLong();
+                    data.avgMotorCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.avgInputCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.dutyCycleNow = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.rpm = buffer.getInt(startIndex + dataIndex++ * 4);
+                    data.inpVoltage = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.ampHours = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.ampHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.tachometer = buffer.getInt(startIndex + dataIndex++ * 4);
+                    data.tachometerAbs = buffer.getInt(startIndex + dataIndex++ * 4);
 
                     // Send the obtained bytes to the UI activity.
                     mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, data).sendToTarget();

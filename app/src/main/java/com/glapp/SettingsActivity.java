@@ -137,7 +137,11 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                     // Reset preferences
                     SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
                     if (preferences != null) {
-                        preferences.edit().clear().apply();
+                        try {
+                            preferences.edit().clear().apply();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         requireActivity().recreate();
                     }
                     break;

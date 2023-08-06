@@ -94,25 +94,25 @@ public class MainActivity extends AppCompatActivity {
                     if (dataToShow == null) break;
 
                     if (dataToShow.contains("avgMotorCurrent")) {
-                        str += data.avgMotorCurrent + " A\n";
+                        str += String.format("%.2f A\n", data.avgMotorCurrent);
                     }
                     if (dataToShow.contains("avgInputCurrent")) {
-                        str += data.avgInputCurrent + " A\n";
+                        str += String.format("%.2f A\n", data.avgInputCurrent);
                     }
                     if (dataToShow.contains("dutyCycleNow")) {
-                        str += data.dutyCycleNow + " %\n";
+                        str += String.format("%.2f %%\n", data.dutyCycleNow);
                     }
                     if (dataToShow.contains("rpm")) {
                         str += data.rpm + " rpm\n";
                     }
                     if (dataToShow.contains("inpVoltage")) {
-                        str += data.inpVoltage + " V\n";
+                        str += String.format("%.2f V\n", data.inpVoltage);
                     }
                     if (dataToShow.contains("ampHours")) {
-                        str += data.ampHours + " Ah\n";
+                        str += String.format("%.2f Ah\n", data.ampHours);
                     }
                     if (dataToShow.contains("ampHoursCharged")) {
-                        str += data.ampHoursCharged + " Ah\n";
+                        str += String.format("%.2f Ah\n", data.ampHoursCharged);
                     }
                     if (dataToShow.contains("tachometer")) {
                         str += data.tachometer + " rot\n";
