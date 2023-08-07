@@ -78,6 +78,8 @@ public class BluetoothService extends Service {
     }
 
     public static class Data {
+        float tempMosfet;
+        float tempMotor;
         float avgMotorCurrent;
         float avgInputCurrent;
         float dutyCycleNow;
@@ -85,6 +87,8 @@ public class BluetoothService extends Service {
         float inpVoltage;
         float ampHours;
         float ampHoursCharged;
+        float wattHours;
+        float wattHoursCharged;
         int tachometer;
         int tachometerAbs;
     }
@@ -521,7 +525,7 @@ public class BluetoothService extends Service {
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    byte[] mmBuffer = new byte[38];
+                    byte[] mmBuffer = new byte[54];
                     int numBytes = mmInStream.read(mmBuffer);
 
                     if (numBytes < 2) {
@@ -535,8 +539,8 @@ public class BluetoothService extends Service {
                         continue;
                     }
 
-                    // Payload length must be 38 bytes (2 bytes for header, 36 bytes for data)
-                    if (mmBuffer[1] != numBytes - 2 || numBytes != 38) {
+                    // Payload length must be 54 bytes (2 bytes for header, 52 bytes for data)
+                    if (mmBuffer[1] != numBytes - 2 || numBytes != 54) {
                         Log.e(TAG, "Message payload length mismatch");
                         continue;
                     }
@@ -545,6 +549,8 @@ public class BluetoothService extends Service {
 
                     ByteBuffer buffer = ByteBuffer.wrap(mmBuffer).order(ByteOrder.LITTLE_ENDIAN);
                     Data data = new Data();
+                    data.tempMosfet = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.tempMotor = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.avgMotorCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.avgInputCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.dutyCycleNow = buffer.getFloat(startIndex + dataIndex++ * 4);
@@ -552,6 +558,8 @@ public class BluetoothService extends Service {
                     data.inpVoltage = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.ampHours = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.ampHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.wattHours = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    data.wattHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
                     data.tachometer = buffer.getInt(startIndex + dataIndex++ * 4);
                     data.tachometerAbs = buffer.getInt(startIndex + dataIndex++ * 4);
 

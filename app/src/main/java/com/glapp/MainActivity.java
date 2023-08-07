@@ -93,6 +93,12 @@ public class MainActivity extends AppCompatActivity {
                     Set<String> dataToShow = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getStringSet("board_data", null);
                     if (dataToShow == null) break;
 
+                    if (dataToShow.contains("tempMosfet")) {
+                        str += String.format("%.2f °C\n", data.tempMosfet);
+                    }
+                    if (dataToShow.contains("tempMotor")) {
+                        str += String.format("%.2f °C\n", data.tempMotor);
+                    }
                     if (dataToShow.contains("avgMotorCurrent")) {
                         str += String.format("%.2f A\n", data.avgMotorCurrent);
                     }
@@ -113,6 +119,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (dataToShow.contains("ampHoursCharged")) {
                         str += String.format("%.2f Ah\n", data.ampHoursCharged);
+                    }
+                    if (dataToShow.contains("wattHours")) {
+                        str += String.format("%.2f Wh\n", data.wattHours);
+                    }
+                    if (dataToShow.contains("wattHoursCharged")) {
+                        str += String.format("%.2f Wh\n", data.wattHoursCharged);
                     }
                     if (dataToShow.contains("tachometer")) {
                         str += data.tachometer + " rot\n";
