@@ -87,50 +87,50 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(android.os.Message msg) {
             switch (msg.what) {
                 case BluetoothService.MSG_WHAT.MESSAGE_RECEIVED:
-                    BluetoothService.Data data = (BluetoothService.Data) msg.obj;
+                    MetricData metricData = (MetricData) msg.obj;
 
                     String str = "";
                     Set<String> dataToShow = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getStringSet("board_data", null);
                     if (dataToShow == null) break;
 
                     if (dataToShow.contains("tempMosfet")) {
-                        str += String.format("%.2f °C\n", data.tempMosfet);
+                        str += metricData.tempMosfetFormatted().concat("\n");
                     }
                     if (dataToShow.contains("tempMotor")) {
-                        str += String.format("%.2f °C\n", data.tempMotor);
+                        str += metricData.tempMotorFormatted().concat("\n");
                     }
                     if (dataToShow.contains("avgMotorCurrent")) {
-                        str += String.format("%.2f A\n", data.avgMotorCurrent);
+                        str += metricData.avgMotorCurrentFormatted().concat("\n");
                     }
                     if (dataToShow.contains("avgInputCurrent")) {
-                        str += String.format("%.2f A\n", data.avgInputCurrent);
+                        str += metricData.avgInputCurrentFormatted().concat("\n");
                     }
                     if (dataToShow.contains("dutyCycleNow")) {
-                        str += String.format("%.2f %%\n", data.dutyCycleNow);
+                        str += metricData.dutyCycleNowFormatted().concat("\n");
                     }
                     if (dataToShow.contains("rpm")) {
-                        str += data.rpm + " rpm\n";
+                        str += metricData.rpmFormatted().concat("\n");
                     }
                     if (dataToShow.contains("inpVoltage")) {
-                        str += String.format("%.2f V\n", data.inpVoltage);
+                        str += metricData.inpVoltageFormatted().concat("\n");
                     }
                     if (dataToShow.contains("ampHours")) {
-                        str += String.format("%.2f Ah\n", data.ampHours);
+                        str += metricData.ampHoursFormatted().concat("\n");
                     }
                     if (dataToShow.contains("ampHoursCharged")) {
-                        str += String.format("%.2f Ah\n", data.ampHoursCharged);
+                        str += metricData.ampHoursChargedFormatted().concat("\n");
                     }
                     if (dataToShow.contains("wattHours")) {
-                        str += String.format("%.2f Wh\n", data.wattHours);
+                        str += metricData.wattHoursFormatted().concat("\n");
                     }
                     if (dataToShow.contains("wattHoursCharged")) {
-                        str += String.format("%.2f Wh\n", data.wattHoursCharged);
+                        str += metricData.wattHoursChargedFormatted().concat("\n");
                     }
                     if (dataToShow.contains("tachometer")) {
-                        str += data.tachometer + " rot\n";
+                        str += metricData.tachometerFormatted().concat("\n");
                     }
                     if (dataToShow.contains("tachometerAbs")) {
-                        str += data.tachometerAbs + " rot\n";
+                        str += metricData.tachometerAbsFormatted().concat("\n");
                     }
                     binding.boardData.setText(str);
                     break;

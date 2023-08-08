@@ -77,22 +77,6 @@ public class BluetoothService extends Service {
         char NODE_SLAVE = 0x02;
     }
 
-    public static class Data {
-        float tempMosfet;
-        float tempMotor;
-        float avgMotorCurrent;
-        float avgInputCurrent;
-        float dutyCycleNow;
-        int rpm;
-        float inpVoltage;
-        float ampHours;
-        float ampHoursCharged;
-        float wattHours;
-        float wattHoursCharged;
-        int tachometer;
-        int tachometerAbs;
-    }
-
     public interface MSG_WHAT {
         int STATUS = 0;
         int MESSAGE_RECEIVED = 1;
@@ -548,23 +532,23 @@ public class BluetoothService extends Service {
                     int startIndex = 2, dataIndex = 0;
 
                     ByteBuffer buffer = ByteBuffer.wrap(mmBuffer).order(ByteOrder.LITTLE_ENDIAN);
-                    Data data = new Data();
-                    data.tempMosfet = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.tempMotor = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.avgMotorCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.avgInputCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.dutyCycleNow = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.rpm = buffer.getInt(startIndex + dataIndex++ * 4);
-                    data.inpVoltage = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.ampHours = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.ampHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.wattHours = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.wattHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    data.tachometer = buffer.getInt(startIndex + dataIndex++ * 4);
-                    data.tachometerAbs = buffer.getInt(startIndex + dataIndex++ * 4);
+                    MetricData metricData = new MetricData();
+                    metricData.tempMosfet = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.tempMotor = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.avgMotorCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.avgInputCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.dutyCycleNow = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.rpm = buffer.getInt(startIndex + dataIndex++ * 4);
+                    metricData.inpVoltage = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.ampHours = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.ampHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.wattHours = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.wattHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
+                    metricData.tachometer = buffer.getInt(startIndex + dataIndex++ * 4);
+                    metricData.tachometerAbs = buffer.getInt(startIndex + dataIndex++ * 4);
 
                     // Send the obtained bytes to the UI activity.
-                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, data).sendToTarget();
+                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, metricData).sendToTarget();
                 } catch (IOException e) {
                     mHandler.obtainMessage(MSG_WHAT.STATUS, BluetoothService.State.DISCONNECTED).sendToTarget();
                     Log.d(TAG, "Input stream was disconnected", e);
