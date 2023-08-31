@@ -115,9 +115,9 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
 
         private void refreshSelectableDevices() {
             if (getContext() != null && getContext() instanceof SettingsActivity) {
-                Set<BluetoothDevice> pairedDevices = ((SettingsActivity) getContext()).mBluetoothService.getPairedDevices();
+                Set<BluetoothDevice> pairedDevices = ((SettingsActivity) requireContext()).mBluetoothService.getPairedDevices();
                 String editText = ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid_filter"))).getText();
-                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                     ((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).setEntries(pairedDevices.stream().filter(device -> editText == null || device.getName().contains(editText)).map(device -> device.getName() + "\n" + device.getAddress()).toArray(CharSequence[]::new));
                     ((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).setEntryValues(pairedDevices.stream().filter(device -> editText == null || device.getName().contains(editText)).map(device -> device.getName() + "\n" + device.getAddress()).toArray(CharSequence[]::new));
                 }
@@ -158,7 +158,13 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                                     .setTitle(R.string.reset_preferences)
                                     .setMessage(R.string.do_you_really_want_to_reset_preferences_to_default_values)
                                     .setIcon(android.R.drawable.ic_dialog_alert)
-                                    .setPositiveButton(android.R.string.ok, (dialog, whichButton) -> {preferences.edit().clear().apply();requireActivity().recreate();})
+                                    .setPositiveButton(android.R.string.ok, (dialog, whichButton) -> {
+                                        if (preferences.getBoolean("offline_mode", false)) {
+                                            ((SettingsActivity) requireContext()).mBluetoothService.disconnect();
+                                        }
+                                        preferences.edit().clear().apply();
+                                        requireActivity().recreate();
+                                    })
                                     .setNegativeButton(android.R.string.cancel, null)
                                     .show();
                         } catch (Exception e) {

@@ -59,6 +59,7 @@ public class BluetoothService extends Service {
         return binder;
     }
 
+    private boolean offlineEnabled = false, offlineConnected = false;
     private BluetoothManager mBluetoothManager = null;
     private BluetoothAdapter mBluetoothAdapter = null;
     private BluetoothSocket mBluetoothSocket = null;
@@ -176,20 +177,31 @@ public class BluetoothService extends Service {
         }, hashCode());
     }
 
+    private boolean inOfflineMode() {
+        return PreferenceManager.getDefaultSharedPreferences(this).getBoolean("offline_mode", false);
+    }
+
     public boolean isInitialized() {
         return mBluetoothAdapter != null;
     }
 
     public boolean isEnabled() {
+        if (inOfflineMode()) return offlineEnabled;
         if (!isInitialized()) throw new IllegalStateException("BluetoothService is not initialized");
         return mBluetoothAdapter.isEnabled();
     }
 
     public boolean isConnected() {
+        if (inOfflineMode()) return offlineConnected;
         return mCommunicationThread != null && mCommunicationThread.isAlive();
     }
 
     public void enable() {
+        if (inOfflineMode()) {
+            offlineEnabled = true;
+            mHandler.obtainMessage(MSG_WHAT.STATUS, State.ENABLED).sendToTarget();
+            return;
+        }
         if (isEnabled()) return;
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -203,6 +215,12 @@ public class BluetoothService extends Service {
     }
 
     public void disable() {
+        if (inOfflineMode()) {
+            offlineEnabled = false;
+            offlineConnected = false;
+            mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISABLED).sendToTarget();
+            return;
+        }
         if (!isEnabled()) return;
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -210,6 +228,7 @@ public class BluetoothService extends Service {
             return;
         }
 
+        mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISABLING).sendToTarget();
         registerBluetoothStateReceiver(BluetoothAdapter.ACTION_STATE_CHANGED, true);
         mBluetoothAdapter.disable();
     }
@@ -263,6 +282,16 @@ public class BluetoothService extends Service {
      * @param enable Continue if bluetooth is disabled (will enable it)
      */
     public void connect(boolean enable) {
+        if (inOfflineMode()) {
+            if (!offlineEnabled) {
+                enable();
+            }
+            offlineConnected = true;
+            mHandler.obtainMessage(MSG_WHAT.STATUS, State.CONNECTED).sendToTarget();
+            mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, new MetricData()).sendToTarget();
+            return;
+        }
+
         if (!isEnabled()) {
             if (enable) {
                 enable();
@@ -308,6 +337,12 @@ public class BluetoothService extends Service {
      * Stop all service threads
      */
     public void disconnect() {
+        if (inOfflineMode()) {
+            offlineConnected = false;
+            mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
+            return;
+        }
+
         if (mConnectThread != null) {
             mConnectThread.cancel();
             mConnectThread = null;
@@ -316,9 +351,7 @@ public class BluetoothService extends Service {
             mCommunicationThread.cancel();
             mCommunicationThread = null;
         }
-        if (mHandler != null) {
-            mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
-        }
+        mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
     }
 
     public void send(byte[] message) {
