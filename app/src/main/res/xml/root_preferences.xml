@@ -13,8 +13,9 @@
             app:summary="@string/select_specific_paired_bluetooth_device"/>
 
         <EditTextPreference
-            app:key="bluetooth_board_ssid"
-            app:title="@string/board_bluetooth_ssid"
+            app:key="bluetooth_board_ssid_filter"
+            app:title="@string/board_bluetooth_ssid_filter"
+            app:summary="@string/enter_the_ssid_of_your_board_s_bluetooth_module_or_none_to_disable_the_filter"
             app:defaultValue="@string/board_name"
             app:useSimpleSummaryProvider="true"
             app:isPreferenceVisible="false"/>
@@ -70,6 +71,11 @@
             app:key="debug_mode"
             app:title="@string/debug_mode"
             app:summary="@string/display_debug_preferences_and_data" />
+
+        <SwitchPreference
+            app:key="offline_mode"
+            app:title="@string/offline_mode"
+            app:summary="@string/use_this_mode_to_test_the_app_without_a_board_connection" />
 
         <Preference
             app:key="reset"

@@ -230,7 +230,7 @@ public class BluetoothService extends Service {
 
     private BluetoothDevice getDeviceFromPreferences() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String device = preferences.getString("bluetooth_board_select", getResources().getString(R.string.board_name));
+        String device = preferences.getString("bluetooth_board_select", null);
         if (device == null) return null;
 
         return getPairedDevice(device.split("\n")[0], device.split("\n")[1]);
@@ -288,6 +288,7 @@ public class BluetoothService extends Service {
 
         BluetoothDevice device = getDeviceFromPreferences();
         if (device == null) {
+            Toast.makeText(this, "Bluetooth device not found", Toast.LENGTH_SHORT).show();
             mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
             return;
         }

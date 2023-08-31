@@ -8,15 +8,36 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/fullscreen_content"
+        android:id="@+id/drive_screen_controls_neutral"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:background="@color/light_yellow"
+        android:backgroundTintMode="screen"
+        android:textColor="?attr/fullscreenTextColor"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/drive_screen_controls_gradient"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/drive_screen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
         android:keepScreenOn="true"
-        android:text="@string/connect_to_board"
+        android:text="@string/tap_to_connect"
         android:textColor="?attr/fullscreenTextColor"
         android:textSize="30sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:clickable="true"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
     <TextView
         android:id="@+id/board_data"
@@ -26,10 +47,11 @@
         android:gravity="top|center_horizontal"
         android:keepScreenOn="true"
         android:textColor="?attr/fullscreenTextColor"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:visibility="gone" />
 
     <ProgressBar
-        android:id="@+id/fullscreen_content_loading"
+        android:id="@+id/drive_screen_loading"
         style="@android:style/Widget.Material.ProgressBar.Large"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -47,7 +69,7 @@
         android:fitsSystemWindows="true">
 
         <LinearLayout
-            android:id="@+id/fullscreen_content_controls"
+            android:id="@+id/drive_screen_controls_buttons"
             style="@style/Widget.Theme.GlApp.ButtonBar.Fullscreen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

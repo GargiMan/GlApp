@@ -12,9 +12,8 @@
     <string name="forward">Forward</string>
 
     <!-- Drive screen -->
-    <string name="ready">Ready</string>
-    <string name="enable_bluetooth">Enable Bluetooth</string>
-    <string name="connect_to_board">Connect to board</string>
+    <string name="tap_to_connect">Tap to connect</string>
+    <string name="drag_to_drive">Drag to drive</string>
 
     <!-- Preferences -->
 
@@ -23,7 +22,8 @@
     <string name="connect_on_app_start">Connect on app start</string>
     <string name="connect_to">Connect to</string>
     <string name="select_specific_paired_bluetooth_device">Select specific paired Bluetooth device</string>
-    <string name="board_bluetooth_ssid">Board bluetooth SSID</string>
+    <string name="board_bluetooth_ssid_filter">Board bluetooth SSID Filter</string>
+    <string name="enter_the_ssid_of_your_board_s_bluetooth_module_or_none_to_disable_the_filter">Enter the SSID of your board\'s bluetooth module or none to disable the filter</string>
 
     <!-- Board Preferences -->
     <string name="board">Board</string>
@@ -46,7 +46,10 @@
     <string name="general">General</string>
     <string name="debug_mode">Debug mode</string>
     <string name="display_debug_preferences_and_data">Display debug preferences and data</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="use_this_mode_to_test_the_app_without_a_board_connection">Use this mode to test the app without a board connection</string>
     <string name="reset_preferences">Reset preferences</string>
+    <string name="do_you_really_want_to_reset_preferences_to_default_values">Do you really want to reset preferences to default values?</string>
 
     <!-- Others -->
     <string name="press_back_again_to_exit">Press back again to exit</string>

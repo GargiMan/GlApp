@@ -1,6 +1,7 @@
 package com.glapp;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -69,6 +70,11 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
         super.onResume();
         bindService(new Intent(this, BluetoothService.class), mServiceConnection, BIND_AUTO_CREATE);
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        SettingsFragment settingsFragment = (SettingsFragment) fragmentManager.findFragmentById(R.id.settings);
+        assert settingsFragment != null;
+        settingsFragment.debugMode();
     }
 
     @Override
@@ -90,10 +96,12 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("board_data")) {
-            Preference multiSelectListPreference = getPreference(key);
-            if (multiSelectListPreference != null) {
-                multiSelectListPreference.setSummary(sharedPreferences.getStringSet(key, null).toString());
+        if (key != null) {
+            if (key.equals("board_data")) {
+                Preference multiSelectListPreference = getPreference(key);
+                if (multiSelectListPreference != null) {
+                    multiSelectListPreference.setSummary(sharedPreferences.getStringSet(key, null).toString());
+                }
             }
         }
     }
@@ -108,7 +116,7 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
         private void refreshSelectableDevices() {
             if (getContext() != null && getContext() instanceof SettingsActivity) {
                 Set<BluetoothDevice> pairedDevices = ((SettingsActivity) getContext()).mBluetoothService.getPairedDevices();
-                String editText = ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid"))).getText();
+                String editText = ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid_filter"))).getText();
                 if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                     ((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).setEntries(pairedDevices.stream().filter(device -> editText == null || device.getName().contains(editText)).map(device -> device.getName() + "\n" + device.getAddress()).toArray(CharSequence[]::new));
                     ((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).setEntryValues(pairedDevices.stream().filter(device -> editText == null || device.getName().contains(editText)).map(device -> device.getName() + "\n" + device.getAddress()).toArray(CharSequence[]::new));
@@ -119,6 +127,14 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                 if (((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).getEntries().length != 0) {
                     ((ListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_select"))).setValueIndex(0);
                 }
+            }
+        }
+
+        private void debugMode() {
+            if (((SwitchPreference) Objects.requireNonNull(getPreferenceManager().findPreference("debug_mode"))).isChecked()) {
+                ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid_filter"))).setVisible(true);
+            } else {
+                ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid_filter"))).setVisible(false);
             }
         }
 
@@ -138,22 +154,21 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                     SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
                     if (preferences != null) {
                         try {
-                            preferences.edit().clear().apply();
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle(R.string.reset_preferences)
+                                    .setMessage(R.string.do_you_really_want_to_reset_preferences_to_default_values)
+                                    .setIcon(android.R.drawable.ic_dialog_alert)
+                                    .setPositiveButton(android.R.string.ok, (dialog, whichButton) -> {preferences.edit().clear().apply();requireActivity().recreate();})
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .show();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        requireActivity().recreate();
                     }
                     break;
                 case "debug_mode":
                     // Debug mode
-                    if (preference instanceof SwitchPreference) {
-                        if (((SwitchPreference) preference).isChecked()) {
-                            ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid"))).setVisible(true);
-                        } else {
-                            ((EditTextPreference) Objects.requireNonNull(getPreferenceManager().findPreference("bluetooth_board_ssid"))).setVisible(false);
-                        }
-                    }
+                    debugMode();
                     break;
                 case "bluetooth_board_select":
                     // Refresh paired devices

@@ -14,8 +14,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.animation.LinearInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -148,34 +150,29 @@ public class MainActivity extends AppCompatActivity {
                     switch ((BluetoothService.State) msg.obj) {
                         case ENABLED:
                         case DISCONNECTED:
+                        case DISABLED:
                             binding.connectButton.setText(R.string.connect);
                             binding.connectButton.setEnabled(true);
-                            binding.fullscreenContentLoading.setVisibility(View.GONE);
-                            binding.fullscreenContent.setText(R.string.connect_to_board);
-                            binding.fullscreenContent.setVisibility(View.VISIBLE);
+                            binding.driveScreenLoading.setVisibility(View.GONE);
+                            binding.driveScreen.setText(R.string.tap_to_connect);
+                            binding.driveScreen.setVisibility(View.VISIBLE);
+                            binding.driveScreenControlsNeutral.setVisibility(View.GONE);
+                            binding.boardData.setVisibility(View.GONE);
                             binding.boardData.setText("");
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_disconnected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.connect));
                             getMenu().findItem(R.id.app_bar_direction).setVisible(false);
                             break;
-                        case DISABLED:
-                            binding.connectButton.setText(R.string.enable_bluetooth);
-                            binding.connectButton.setEnabled(true);
-                            binding.fullscreenContentLoading.setVisibility(View.GONE);
-                            binding.fullscreenContent.setVisibility(View.VISIBLE);
-                            binding.fullscreenContent.setText(R.string.enable_bluetooth);
-                            getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
-                            getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_disconnected);
-                            getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.enable_bluetooth));
-                            getMenu().findItem(R.id.app_bar_direction).setVisible(false);
-                            break;
                         case CONNECTED:
                             binding.connectButton.setText(R.string.disconnect);
                             binding.connectButton.setEnabled(true);
-                            binding.fullscreenContentLoading.setVisibility(View.GONE);
-                            binding.fullscreenContent.setVisibility(View.VISIBLE);
-                            binding.fullscreenContent.setText(R.string.ready);
+                            binding.driveScreenLoading.setVisibility(View.GONE);
+                            binding.driveScreen.setVisibility(View.VISIBLE);
+                            binding.driveScreen.setText("");
+                            binding.driveScreenControlsNeutral.setText(R.string.drag_to_drive);
+                            binding.driveScreenControlsNeutral.setVisibility(View.VISIBLE);
+                            binding.boardData.setVisibility(View.VISIBLE);
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.disconnect));
@@ -186,16 +183,16 @@ public class MainActivity extends AppCompatActivity {
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(false);
                             new Handler(getMainLooper()).postDelayed(() -> {
                                 if (mBluetoothService.isEnabled()) return;
-                                binding.fullscreenContentLoading.setVisibility(View.VISIBLE);
-                                binding.fullscreenContent.setVisibility(View.GONE);
+                                binding.driveScreenLoading.setVisibility(View.VISIBLE);
+                                binding.driveScreen.setVisibility(View.GONE);
                             }, 200);
                         case CONNECTING:
                             binding.connectButton.setEnabled(false);
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(false);
                             new Handler(getMainLooper()).postDelayed(() -> {
                                 if (mBluetoothService.isConnected()) return;
-                                binding.fullscreenContentLoading.setVisibility(View.VISIBLE);
-                                binding.fullscreenContent.setVisibility(View.GONE);
+                                binding.driveScreenLoading.setVisibility(View.VISIBLE);
+                                binding.driveScreen.setVisibility(View.GONE);
                             }, 200);
                             break;
                         default:
@@ -237,8 +234,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         mVisible = true;
-        mControlsView = binding.fullscreenContentControls;
-        mContentView = binding.fullscreenContent;
+        mControlsView = binding.driveScreenControlsButtons;
+        mContentView = binding.driveScreen;
 
         //Bluetooth service setup
         Intent bluetoothServiceIntent = new Intent(MainActivity.this, BluetoothService.class);
@@ -248,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Controllers setup
         binding.connectButton.setOnTouchListener(connectController);
-        binding.fullscreenContent.setOnTouchListener(driveController);
+        binding.driveScreen.setOnTouchListener(driveController);
     }
 
     @Override
@@ -370,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
 
             direction = !direction;
 
-            return(true);
+            return true;
 
         case R.id.app_bar_bluetooth:
 
@@ -378,13 +375,13 @@ public class MainActivity extends AppCompatActivity {
 
             connectionController();
 
-            return(true);
+            return true;
 
         case R.id.app_bar_settings:
 
             startActivity(new Intent(this, SettingsActivity.class));
 
-            return(true);
+            return true;
     }
         return(super.onOptionsItemSelected(item));
     }
@@ -431,34 +428,45 @@ public class MainActivity extends AppCompatActivity {
         };
 
         private final Handler clickHandler = new Handler(Looper.myLooper());
-        private final Runnable clickRunnable = () -> connectionController();
+        private final Runnable connectDevice = () -> connectionController();
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
+
+            int windowHeight = getWindowManager().getCurrentWindowMetrics().getBounds().height();
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     touchTimeStart = System.currentTimeMillis();
                     //set start touch position
                     touchPosStart = event.getY();
+
+                    binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
+                    binding.driveScreenControlsNeutral.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (windowHeight * MAX_CONTROL_RANGE * START_DEAD_ZONE)));
+
                     break;
                 case MotionEvent.ACTION_UP:
+
+                    binding.driveScreenControlsNeutral.setY(windowHeight / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
 
                     if (!started) {
 
                         // Set up the user interaction to manually show or hide the system UI.
                         if (touchTimeFirst + DOUBLE_CLICK_TIME_THRESHOLD > System.currentTimeMillis()) {
-                            clickHandler.removeCallbacks(clickRunnable);
+                            clickHandler.removeCallbacks(connectDevice);
                             toggle();
                             break;
                         }
                         touchTimeFirst = System.currentTimeMillis();
 
                         if (touchTimeStart + CLICK_TIME_THRESHOLD > System.currentTimeMillis()) {
-                            clickHandler.postDelayed(clickRunnable, DOUBLE_CLICK_TIME_THRESHOLD);
-                            view.performClick();
+                            if (mBluetoothService.isConnected()) {
+                                break;
+                            }
+                            view.setPressed(true);
+                            clickHandler.postDelayed(connectDevice, DOUBLE_CLICK_TIME_THRESHOLD);
+                            view.setPressed(false);
                         }
-
                         break;
                     }
 
@@ -468,7 +476,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
                     //send power and reset display text
-                    binding.fullscreenContent.setText(R.string.ready);
+                    binding.driveScreenControlsGradient.setVisibility(View.GONE);
+                    binding.driveScreenControlsNeutral.setText(R.string.drag_to_drive);
                     mBluetoothService.send(new byte[]{(byte)power});
 
                     //stop sending loop
@@ -477,12 +486,9 @@ public class MainActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_MOVE:
 
                     if (!mBluetoothService.isConnected()) {
-                        //view.performClick();
                         //Toast.makeText(MainActivity.this, "Not connected", Toast.LENGTH_SHORT).show();
                         return false;
                     }
-
-                    int windowHeight = getWindowManager().getCurrentWindowMetrics().getBounds().height();
 
                     //set current touch position
                     touchPosNow = event.getY();
@@ -491,12 +497,15 @@ public class MainActivity extends AppCompatActivity {
                     power = (int)((touchPosStart - touchPosNow) / (windowHeight * MAX_CONTROL_RANGE / 2f) * 100f);
 
                     //limit power and move zone
-                    if (power > 100) {
-                        power = 100;
-                        touchPosStart = (float) (touchPosNow + (windowHeight * MAX_CONTROL_RANGE / 2f));
-                    } else if (power < -100) {
-                        power = -100;
-                        touchPosStart = (float) (touchPosNow - (windowHeight * MAX_CONTROL_RANGE / 2f));
+                    if (power > 100 || power < -100) {
+                        if (power > 100) {
+                            power = 100;
+                            touchPosStart = (float) (touchPosNow + (windowHeight * MAX_CONTROL_RANGE / 2f));
+                        } else {
+                            power = -100;
+                            touchPosStart = (float) (touchPosNow - (windowHeight * MAX_CONTROL_RANGE / 2f));
+                        }
+                        binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
                     }
                     Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
@@ -507,12 +516,25 @@ public class MainActivity extends AppCompatActivity {
                         started = true;
                     }
 
+                    binding.driveScreenControlsGradient.setVisibility(View.VISIBLE);
+                    if (power > 0) {
+                        binding.driveScreenControlsGradient.setImageDrawable(getDrawable(R.drawable.gradient_throttle));
+                        binding.driveScreenControlsGradient.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (int) (touchPosStart - touchPosNow)));
+                        binding.driveScreenControlsGradient.setY(touchPosNow);
+                    } else if (power < 0) {
+                        binding.driveScreenControlsGradient.setImageDrawable(getDrawable(R.drawable.gradient_brake));
+                        binding.driveScreenControlsGradient.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, (int) (touchPosNow - touchPosStart)));
+                        binding.driveScreenControlsGradient.setY(touchPosStart);
+                    } else {
+                        binding.driveScreenControlsGradient.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 0));
+                    }
+
                     //INFO temp
                     //round power (reduce power wobble)
                     power = (int)(Math.round(power / 10.0) * 10);
 
                     //send power and update display
-                    binding.fullscreenContent.setText(String.valueOf(power));
+                    binding.driveScreenControlsNeutral.setText(String.valueOf(power));
                     mBluetoothService.send(new byte[]{(byte)power});
                     //Integer.toBinaryString(power).replaceFirst("^.*(.{8})$","$1")
 
