@@ -4,32 +4,62 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/fullscreenBackgroundColor"
-    android:theme="@style/ThemeOverlay.GLong.FullscreenContainer"
+    android:theme="@style/ThemeOverlay.GlApp.FullscreenContainer"
     tools:context=".MainActivity">
 
-    <!-- The primary full-screen view. This can be replaced with whatever view
-         is needed to present your content, e.g. VideoView, SurfaceView,
-         TextureView, etc. -->
     <TextView
-        android:id="@+id/fullscreen_content"
+        android:id="@+id/drive_screen_controls_neutral"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:background="@color/light_yellow"
+        android:backgroundTintMode="screen"
+        android:textColor="?attr/fullscreenTextColor"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/drive_screen_controls_gradient"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/drive_screen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
         android:keepScreenOn="true"
-        android:text="@string/welcome_message"
+        android:text="@string/tap_to_connect"
         android:textColor="?attr/fullscreenTextColor"
-        android:textSize="50sp"
-        android:textStyle="bold" />
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:clickable="true"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
     <TextView
-        android:id="@+id/fullscreen_info"
+        android:id="@+id/board_data"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="20dp"
         android:gravity="top|center_horizontal"
         android:keepScreenOn="true"
         android:textColor="?attr/fullscreenTextColor"
-        android:textSize="20sp" />
+        android:textSize="20sp"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/drive_screen_loading"
+        style="@android:style/Widget.Material.ProgressBar.Large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:indeterminateTintMode="src_atop"
+        android:indeterminateTint="@color/light_orange"
+        android:visibility="gone" />
 
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->
@@ -39,8 +69,8 @@
         android:fitsSystemWindows="true">
 
         <LinearLayout
-            android:id="@+id/fullscreen_content_controls"
-            style="@style/Widget.Theme.GLong.ButtonBar.Fullscreen"
+            android:id="@+id/drive_screen_controls_buttons"
+            style="@style/Widget.Theme.GlApp.ButtonBar.Fullscreen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|center_horizontal"
@@ -53,22 +83,16 @@
                 android:layout_weight="1"
                 android:orientation="horizontal">
 
+                <!-- Hidden until needed for any purpose -->
+
                 <Button
                     android:id="@+id/connect_button"
                     style="?android:attr/buttonBarButtonStyle"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:text="@string/bluetooth"
-                    android:visibility="visible" />
-
-                <ProgressBar
-                    android:id="@+id/connect_button_loading"
-                    style="@android:style/Widget.Material.Light.ProgressBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:indeterminate="true"
                     android:visibility="gone" />
+
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>

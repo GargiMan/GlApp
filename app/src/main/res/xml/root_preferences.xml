@@ -1,0 +1,87 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory app:title="@string/connection">
+
+        <SwitchPreferenceCompat
+            app:key="bluetooth_connect_on_start"
+            app:title="@string/connect_on_app_start" />
+
+        <ListPreference
+            app:key="bluetooth_board_select"
+            app:title="@string/connect_to"
+            app:summary="@string/select_specific_paired_bluetooth_device"/>
+
+        <EditTextPreference
+            app:key="bluetooth_board_ssid_filter"
+            app:title="@string/board_bluetooth_ssid_filter"
+            app:summary="@string/enter_the_ssid_of_your_board_s_bluetooth_module_or_none_to_disable_the_filter"
+            app:defaultValue="@string/board_name"
+            app:useSimpleSummaryProvider="true"
+            app:isPreferenceVisible="false"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/drive_configuration">
+
+        <SeekBarPreference
+            app:key="max_throttle_power"
+            android:min="1"
+            android:max="20"
+            android:defaultValue="10"
+            app:showSeekBarValue="true"
+            app:title="@string/max_throttle_power"
+            app:summary="@string/amps" />
+
+        <SeekBarPreference
+            app:key="max_brake_power"
+            android:min="1"
+            android:max="20"
+            android:defaultValue="10"
+            app:showSeekBarValue="true"
+            app:title="@string/max_brake_power"
+            app:summary="@string/amps" />
+
+        <SwitchPreferenceCompat
+            app:key="accelerate_over_time"
+            app:summaryOff="@string/smooth_acceleration_off"
+            app:summaryOn="@string/smooth_acceleration_on"
+            app:title="@string/smooth_acceleration" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/app_interface">
+
+        <MultiSelectListPreference
+            app:key="board_data"
+            app:entries="@array/board_data_entries"
+            app:entryValues="@array/board_data_values"
+            app:defaultValue="@array/board_data_values_default"
+            app:title="@string/board_data_displayed_on_drive_screen"
+            app:dialogTitle="@string/select_board_data_to_display"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/general">
+
+        <SwitchPreference
+            app:key="debug_mode"
+            app:title="@string/debug_mode"
+            app:summary="@string/display_debug_preferences_and_data" />
+
+        <SwitchPreference
+            app:key="offline_mode"
+            app:title="@string/offline_mode"
+            app:summary="@string/use_this_mode_to_test_the_app_without_a_board_connection" />
+
+        <Preference
+            app:key="reset"
+            app:title="@string/reset_preferences"/>
+
+    </PreferenceCategory>
+
+
+</PreferenceScreen>

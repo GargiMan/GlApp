@@ -1,8 +1,57 @@
 <resources>
-    <string name="app_name">GLong</string>
-    <string name="welcome_message">Connect to board</string>
+    <string name="app_name">GlApp</string>
+    <string name="board_name">GlBoard</string>
+
+    <!-- Menu -->
+    <string name="direction">Direction</string>
+    <string name="settings">Settings</string>
     <string name="bluetooth">Bluetooth</string>
-    <string name="bt_service_ready">Bluetooth service ready</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="backward">Backward</string>
+    <string name="forward">Forward</string>
+
+    <!-- Drive screen -->
+    <string name="tap_to_connect">Tap to connect</string>
+    <string name="drag_to_drive">Drag to drive</string>
+
+    <!-- Preferences -->
+
+    <!-- Connection Preferences -->
+    <string name="connection">Connection</string>
+    <string name="connect_on_app_start">Connect on app start</string>
+    <string name="connect_to">Connect to</string>
+    <string name="select_specific_paired_bluetooth_device">Select specific paired Bluetooth device</string>
+    <string name="board_bluetooth_ssid_filter">Board bluetooth SSID Filter</string>
+    <string name="enter_the_ssid_of_your_board_s_bluetooth_module_or_none_to_disable_the_filter">Enter the SSID of your board\'s bluetooth module or none to disable the filter</string>
+
+    <!-- Board Preferences -->
+    <string name="board">Board</string>
+
+    <!-- Drive Preferences -->
+    <string name="drive_configuration">Drive configuration</string>
+    <string name="max_throttle_power">Max throttle power</string>
+    <string name="max_brake_power">Max brake power</string>
+    <string name="amps">Amps</string>
+    <string name="smooth_acceleration">Smooth acceleration</string>
+    <string name="smooth_acceleration_on">Acceleration spikes will be smoothed out</string>
+    <string name="smooth_acceleration_off">Instantly accelerate to selected throttle power</string>
+
+    <!-- Interface Preferences -->
+    <string name="app_interface">Interface</string>
+    <string name="board_data_displayed_on_drive_screen">Board data displayed on drive screen</string>
+    <string name="select_board_data_to_display">Select board data to display</string>
+
+    <!-- General Preferences -->
+    <string name="general">General</string>
+    <string name="debug_mode">Debug mode</string>
+    <string name="display_debug_preferences_and_data">Display debug preferences and data</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="use_this_mode_to_test_the_app_without_a_board_connection">Use this mode to test the app without a board connection</string>
+    <string name="reset_preferences">Reset preferences</string>
+    <string name="do_you_really_want_to_reset_preferences_to_default_values">Do you really want to reset preferences to default values?</string>
+
+    <!-- Others -->
     <string name="press_back_again_to_exit">Press back again to exit</string>
-    <string name="ready">Ready</string>
+
 </resources>

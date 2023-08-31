@@ -1,4 +1,4 @@
-package com.glong;
+package com.glapp;
 
 import org.junit.Test;
 

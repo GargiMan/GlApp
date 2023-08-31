@@ -1,0 +1,38 @@
+<resources>
+    <string-array name="board_data_entries">
+        <item>Temperature Mosfet</item>
+        <item>Temperature Motor</item>
+        <item>Average Motor Current</item>
+        <item>Average Input Current</item>
+        <item>Duty Cycle Now</item>
+        <item>Rpm</item>
+        <item>Input Voltage</item>
+        <item>AmpHours</item>
+        <item>AmpHours (Charged)</item>
+        <item>WattHours</item>
+        <item>WattHours (Charged)</item>
+        <item>Tachometer</item>
+        <item>Tachometer (Absolute)</item>
+    </string-array>
+
+    <string-array name="board_data_values">
+        <item>tempMosfet</item>
+        <item>tempMotor</item>
+        <item>avgMotorCurrent</item>
+        <item>avgInputCurrent</item>
+        <item>dutyCycleNow</item>
+        <item>rpm</item>
+        <item>inpVoltage</item>
+        <item>ampHours</item>
+        <item>ampHoursCharged</item>
+        <item>wattHours</item>
+        <item>wattHoursCharged</item>
+        <item>tachometer</item>
+        <item>tachometerAbs</item>
+    </string-array>
+
+    <string-array name="board_data_values_default">
+        <item>inpVoltage</item>
+        <item>avgMotorCurrent</item>
+    </string-array>
+</resources>
