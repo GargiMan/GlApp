@@ -180,6 +180,10 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                     // Refresh paired devices
                     refreshSelectableDevices();
                     break;
+                case "offline_mode":
+                    // Offline mode reset
+                    ((SettingsActivity) requireContext()).mBluetoothService.disconnect();
+                    break;
             }
 
             return super.onPreferenceTreeClick(preference);

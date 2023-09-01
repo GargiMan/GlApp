@@ -337,11 +337,7 @@ public class BluetoothService extends Service {
      * Stop all service threads
      */
     public void disconnect() {
-        if (inOfflineMode()) {
-            offlineConnected = false;
-            mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
-            return;
-        }
+        offlineConnected = false;
 
         if (mConnectThread != null) {
             mConnectThread.cancel();
@@ -351,6 +347,7 @@ public class BluetoothService extends Service {
             mCommunicationThread.cancel();
             mCommunicationThread = null;
         }
+
         mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
     }
 
