@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
@@ -267,11 +268,11 @@ public class BluetoothService extends Service {
     }
 
     public Set<BluetoothDevice> getPairedDevices() {
-        if (!isEnabled()) return null;
+        if (!isEnabled()) return Collections.emptySet();
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions();
-            return null;
+            return Collections.emptySet();
         }
 
         return mBluetoothAdapter.getBondedDevices();
@@ -348,7 +349,9 @@ public class BluetoothService extends Service {
             mCommunicationThread = null;
         }
 
-        mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
+        if (mHandler != null) {
+            mHandler.obtainMessage(MSG_WHAT.STATUS, State.DISCONNECTED).sendToTarget();
+        }
     }
 
     public void send(byte[] message) {

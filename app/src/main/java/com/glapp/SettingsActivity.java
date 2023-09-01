@@ -102,6 +102,11 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
                 if (multiSelectListPreference != null) {
                     multiSelectListPreference.setSummary(sharedPreferences.getStringSet(key, null).toString());
                 }
+
+                // Update board data displayed in offline mode
+                if (sharedPreferences.getBoolean("offline_mode", false)) {
+                    mBluetoothService.connect(true);
+                }
             }
         }
     }
