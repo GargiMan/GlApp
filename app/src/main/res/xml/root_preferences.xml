@@ -75,7 +75,8 @@
         <SwitchPreference
             app:key="offline_mode"
             app:title="@string/offline_mode"
-            app:summary="@string/use_this_mode_to_test_the_app_without_a_board_connection" />
+            app:summary="@string/use_this_mode_to_test_the_app_without_a_board_connection"
+            app:isPreferenceVisible="false"/>
 
         <Preference
             app:key="reset"
