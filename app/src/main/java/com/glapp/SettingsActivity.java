@@ -66,8 +66,6 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
         super.onResume();
         bindService(new Intent(this, BluetoothService.class), mServiceConnection, BIND_AUTO_CREATE);
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
-
-        updateView();
     }
 
     @Override
@@ -147,6 +145,7 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
+            ((SettingsActivity) getActivity()).updateView();
 
             ((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).setSummary(((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).getValues().toString());
         }
