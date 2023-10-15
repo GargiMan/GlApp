@@ -176,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
                             binding.driveScreenControlsNeutral.setY(getWindowManager().getCurrentWindowMetrics().getBounds().height() / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
                             binding.driveScreenControlsNeutral.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (getWindowManager().getCurrentWindowMetrics().getBounds().height() * MAX_CONTROL_RANGE * START_DEAD_ZONE)));
                             binding.boardData.setVisibility(View.VISIBLE);
+                            obtainMessage(BluetoothService.MSG_WHAT.MESSAGE_RECEIVED, new MetricData()).sendToTarget();
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.disconnect));
@@ -249,6 +250,20 @@ public class MainActivity extends AppCompatActivity {
         //Controllers setup
         binding.connectButton.setOnTouchListener(connectController);
         binding.driveScreen.setOnTouchListener(driveController);
+    }
+
+    //Required to update the UI when the activity is resumed (theme change)
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mBluetoothService != null) {
+            if (mBluetoothService.isConnected()) {
+                mHandler.obtainMessage(BluetoothService.MSG_WHAT.STATUS, BluetoothService.State.CONNECTED).sendToTarget();
+            } else {
+                mHandler.obtainMessage(BluetoothService.MSG_WHAT.STATUS, BluetoothService.State.DISCONNECTED).sendToTarget();
+            }
+        }
     }
 
     @Override

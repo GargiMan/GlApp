@@ -289,7 +289,6 @@ public class BluetoothService extends Service {
             }
             offlineConnected = true;
             mHandler.obtainMessage(MSG_WHAT.STATUS, State.CONNECTED).sendToTarget();
-            mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, new MetricData()).sendToTarget();
             return;
         }
 
