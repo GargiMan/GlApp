@@ -355,6 +355,8 @@ public class BluetoothService extends Service {
     }
 
     public void send(byte[] message) {
+        if (inOfflineMode()) return;
+
         if (!isEnabled()) return;
 
         if (mCommunicationThread == null) {

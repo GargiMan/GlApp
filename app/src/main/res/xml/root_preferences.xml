@@ -43,6 +43,7 @@
             app:summary="@string/amps" />
 
         <SwitchPreferenceCompat
+            app:enabled="false"
             app:key="accelerate_over_time"
             app:summaryOff="@string/smooth_acceleration_off"
             app:summaryOn="@string/smooth_acceleration_on"

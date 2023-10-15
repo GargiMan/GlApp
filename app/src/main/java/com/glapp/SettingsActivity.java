@@ -16,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.EditTextPreference;
 import androidx.preference.ListPreference;
-import androidx.preference.MultiSelectListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -147,7 +146,7 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
             ((SettingsActivity) getActivity()).updateView();
 
-            ((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).setSummary(((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).getValues().toString());
+            //((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).setSummary(((MultiSelectListPreference) Objects.requireNonNull(getPreferenceManager().findPreference("board_data"))).getValues().toString());
         }
 
         @Override
