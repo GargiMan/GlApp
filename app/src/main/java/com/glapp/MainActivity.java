@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.animation.LinearInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -172,6 +173,8 @@ public class MainActivity extends AppCompatActivity {
                             binding.driveScreen.setText("");
                             binding.driveScreenControlsNeutral.setText(R.string.drag_to_drive);
                             binding.driveScreenControlsNeutral.setVisibility(View.VISIBLE);
+                            binding.driveScreenControlsNeutral.setY(getWindowManager().getCurrentWindowMetrics().getBounds().height() / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
+                            binding.driveScreenControlsNeutral.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (getWindowManager().getCurrentWindowMetrics().getBounds().height() * MAX_CONTROL_RANGE * START_DEAD_ZONE)));
                             binding.boardData.setVisibility(View.VISIBLE);
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
@@ -434,6 +437,7 @@ public class MainActivity extends AppCompatActivity {
         public boolean onTouch(View view, MotionEvent event) {
 
             int windowHeight = getWindowManager().getCurrentWindowMetrics().getBounds().height();
+            ObjectAnimator animation;
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -441,13 +445,18 @@ public class MainActivity extends AppCompatActivity {
                     //set start touch position
                     touchPosStart = event.getY();
 
-                    binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
-                    binding.driveScreenControlsNeutral.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (windowHeight * MAX_CONTROL_RANGE * START_DEAD_ZONE)));
+                    animation = ObjectAnimator.ofFloat(binding.driveScreenControlsNeutral, "y", binding.driveScreenControlsNeutral.getY(), touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
+                    animation.setInterpolator(new OvershootInterpolator());
+                    animation.setAutoCancel(true);
+                    animation.start();
 
                     break;
                 case MotionEvent.ACTION_UP:
 
-                    binding.driveScreenControlsNeutral.setY(windowHeight / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
+                    animation = ObjectAnimator.ofFloat(binding.driveScreenControlsNeutral, "y", binding.driveScreenControlsNeutral.getY(), windowHeight / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
+                    animation.setInterpolator(new OvershootInterpolator());
+                    animation.setAutoCancel(true);
+                    animation.start();
 
                     if (!started) {
 
@@ -473,7 +482,7 @@ public class MainActivity extends AppCompatActivity {
                     //reset power and dead zone
                     power = 0;
                     started = false;
-                    Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
+                    //Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
                     //send power and reset display text
                     binding.driveScreenControlsGradient.setVisibility(View.GONE);
@@ -505,9 +514,11 @@ public class MainActivity extends AppCompatActivity {
                             power = -100;
                             touchPosStart = (float) (touchPosNow - (windowHeight * MAX_CONTROL_RANGE / 2f));
                         }
+                    }
+                    if (binding.driveScreenControlsNeutral.getY() != touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f) {
                         binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
                     }
-                    Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
+                    //Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
                     //dead zone
                     if (power < START_DEAD_ZONE * 100 && power > -START_DEAD_ZONE * 100) {
