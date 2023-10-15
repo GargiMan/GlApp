@@ -515,9 +515,6 @@ public class MainActivity extends AppCompatActivity {
                             touchPosStart = (float) (touchPosNow - (windowHeight * MAX_CONTROL_RANGE / 2f));
                         }
                     }
-                    if (binding.driveScreenControlsNeutral.getY() != touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f) {
-                        binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
-                    }
                     //Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
                     //dead zone
@@ -525,6 +522,13 @@ public class MainActivity extends AppCompatActivity {
                         if (!started) break;
                     } else {
                         started = true;
+                    }
+
+                    if (binding.driveScreenControlsNeutral.getY() != touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f) {
+                        //binding.driveScreenControlsNeutral.setY(touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
+                        animation = ObjectAnimator.ofFloat(binding.driveScreenControlsNeutral, "y", binding.driveScreenControlsNeutral.getY(), touchPosStart - binding.driveScreenControlsNeutral.getHeight() / 2f);
+                        animation.setDuration(0);
+                        animation.start();
                     }
 
                     binding.driveScreenControlsGradient.setVisibility(View.VISIBLE);
