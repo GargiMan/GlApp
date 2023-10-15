@@ -5,24 +5,33 @@
     tools:context=".MainActivity">
 
     <item
+        android:id="@+id/app_bar_lights"
+        android:title="@string/lights"
+        android:tooltipText="@string/lights"
+        android:icon="@drawable/ic_lights"
+        android:visible="false"
+        app:showAsAction="always"/>
+
+    <item
         android:id="@+id/app_bar_direction"
         android:title="@string/direction"
         android:tooltipText="@string/direction"
         android:icon="@drawable/ic_direction"
         android:visible="false"
         app:actionViewClass="android.widget.ImageView"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always"/>
 
     <item
         android:id="@+id/app_bar_bluetooth"
         android:title="@string/bluetooth"
         android:tooltipText="@string/bluetooth"
         android:icon="@drawable/ic_bluetooth_disconnected"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always"/>
 
     <item
         android:id="@+id/app_bar_settings"
         android:title="@string/settings"
+        android:tooltipText="@string/settings"
         android:icon="@drawable/ic_settings"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always"/>
 </menu>

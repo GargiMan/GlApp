@@ -10,10 +10,10 @@
     <TextView
         android:id="@+id/drive_screen_controls_neutral"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="50dp"
         android:gravity="center"
-        android:background="@color/light_yellow"
-        android:backgroundTintMode="screen"
+        android:background="?attr/neutralBarColor"
+        android:backgroundTint="?attr/neutralBarColor"
         android:textColor="?attr/fullscreenTextColor"
         android:textSize="30sp"
         android:textStyle="bold"

@@ -12,6 +12,8 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <item name="android:backgroundTint">@color/dark_dark_gray</item>
+        <!-- Neutral bar color. -->
+        <item name="neutralBarColor">@color/orange_transparent_50</item>
     </style>
 
     <style name="Theme.GlApp.Fullscreen" parent="Theme.GlApp">
