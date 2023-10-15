@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_disconnected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.connect));
                             getMenu().findItem(R.id.app_bar_direction).setVisible(false);
+                            getMenu().findItem(R.id.app_bar_lights).setVisible(false);
                             break;
                         case CONNECTED:
                             binding.connectButton.setText(R.string.disconnect);
@@ -181,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.disconnect));
                             getMenu().findItem(R.id.app_bar_direction).setVisible(true);
+                            getMenu().findItem(R.id.app_bar_lights).setVisible(true);
                             break;
                         case ENABLING:
                             binding.connectButton.setEnabled(false);
@@ -373,34 +375,39 @@ public class MainActivity extends AppCompatActivity {
     private boolean direction = true;
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) { switch(item.getItemId()) {
-        case R.id.app_bar_direction:
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.app_bar_lights:
 
-            if (item.getActionView().getRotation() % 180 != 0) return true;
+                return true;
 
-            ObjectAnimator rotationAnimator = ObjectAnimator.ofFloat(item.getActionView(), "rotation", item.getActionView().getRotation(), item.getActionView().getRotation()+180f);
-            rotationAnimator.setDuration(300);
-            rotationAnimator.setInterpolator(new LinearInterpolator());
-            rotationAnimator.start();
+            case R.id.app_bar_direction:
 
-            direction = !direction;
+                if (item.getActionView().getRotation() % 180 != 0) return true;
 
-            return true;
+                ObjectAnimator rotationAnimator = ObjectAnimator.ofFloat(item.getActionView(), "rotation", item.getActionView().getRotation(), item.getActionView().getRotation()+180f);
+                rotationAnimator.setDuration(300);
+                rotationAnimator.setInterpolator(new LinearInterpolator());
+                rotationAnimator.start();
 
-        case R.id.app_bar_bluetooth:
+                direction = !direction;
 
-            item.setEnabled(false);
+                return true;
 
-            connectionController();
+            case R.id.app_bar_bluetooth:
 
-            return true;
+                item.setEnabled(false);
 
-        case R.id.app_bar_settings:
+                connectionController();
 
-            startActivity(new Intent(this, SettingsActivity.class));
+                return true;
 
-            return true;
-    }
+            case R.id.app_bar_settings:
+
+                startActivity(new Intent(this, SettingsActivity.class));
+
+                return true;
+        }
         return(super.onOptionsItemSelected(item));
     }
 
