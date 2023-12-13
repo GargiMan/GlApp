@@ -27,6 +27,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.preference.PreferenceManager;
 
+import com.glapp.data.ControlData;
+import com.glapp.data.MetricsData;
+import com.glapp.data.Packet;
+import com.glapp.data.Packet.*;
 import com.glapp.databinding.MainActivityBinding;
 
 import java.util.Set;
@@ -56,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private static final int UI_ANIMATION_DELAY = 300;
 
-    private final Handler mHideHandler = new Handler(Looper.myLooper());
+    private final Handler mHideHandler = new Handler(Looper.getMainLooper());
 
     private View mContentView;
     private final Runnable mHidePart2Runnable = new Runnable() {
@@ -85,57 +89,37 @@ public class MainActivity extends AppCompatActivity {
     private MainActivityBinding binding;
 
 
-    public final Handler mHandler = new Handler(Looper.myLooper()) {
+    public final Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(android.os.Message msg) {
             switch (msg.what) {
                 case BluetoothService.MSG_WHAT.MESSAGE_RECEIVED:
-                    MetricData metricData = (MetricData) msg.obj;
 
-                    String str = "";
-                    Set<String> dataToShow = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getStringSet("board_data", null);
-                    if (dataToShow == null) break;
+                    Packet packet = (Packet) msg.obj;
 
-                    if (dataToShow.contains("tempMosfet")) {
-                        str += metricData.tempMosfetFormatted().concat("\n");
+                    // Send the obtained bytes to the UI activity.
+                    switch (packet.getCommand()) {
+                        case METRICS:
+                            if (packet.getType() != Packet.Type.RESPONSE) {
+                                Log.e(TAG, "Invalid metrics packet received (wrong type)");
+                                return;
+                            }
+                            if (packet.getPayloadLength() != 52) {
+                                Log.e(TAG, "Invalid metrics packet received (payload length mismatch)");
+                                return;
+                            }
+                            MetricsData metricData = new MetricsData(packet.getPayload());
+                            Set<String> dataToShow = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).getStringSet("board_data", null);
+                            String str = metricData.getConcatenatedData(dataToShow);
+                            binding.boardData.setText(str);
+                            break;
+                        case CONTROL:
+                            break;
+                        case CONFIG:
+                            break;
+                        case TEST:
+                            break;
                     }
-                    if (dataToShow.contains("tempMotor")) {
-                        str += metricData.tempMotorFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("avgMotorCurrent")) {
-                        str += metricData.avgMotorCurrentFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("avgInputCurrent")) {
-                        str += metricData.avgInputCurrentFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("dutyCycleNow")) {
-                        str += metricData.dutyCycleNowFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("rpm")) {
-                        str += metricData.rpmFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("inpVoltage")) {
-                        str += metricData.inpVoltageFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("ampHours")) {
-                        str += metricData.ampHoursFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("ampHoursCharged")) {
-                        str += metricData.ampHoursChargedFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("wattHours")) {
-                        str += metricData.wattHoursFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("wattHoursCharged")) {
-                        str += metricData.wattHoursChargedFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("tachometer")) {
-                        str += metricData.tachometerFormatted().concat("\n");
-                    }
-                    if (dataToShow.contains("tachometerAbs")) {
-                        str += metricData.tachometerAbsFormatted().concat("\n");
-                    }
-                    binding.boardData.setText(str);
                     break;
 
                 case BluetoothService.MSG_WHAT.MESSAGE_SENT:
@@ -177,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
                             binding.driveScreenControlsNeutral.setY(getWindowManager().getCurrentWindowMetrics().getBounds().height() / 2f - binding.driveScreenControlsNeutral.getHeight() * 3f/2f);
                             binding.driveScreenControlsNeutral.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (getWindowManager().getCurrentWindowMetrics().getBounds().height() * MAX_CONTROL_RANGE * START_DEAD_ZONE)));
                             binding.boardData.setVisibility(View.VISIBLE);
-                            obtainMessage(BluetoothService.MSG_WHAT.MESSAGE_RECEIVED, new MetricData()).sendToTarget();
+                            obtainMessage(BluetoothService.MSG_WHAT.MESSAGE_RECEIVED, new Packet(Type.RESPONSE, Source.NODE_MASTER, Command.METRICS, new MetricsData())).sendToTarget();
                             getMenu().findItem(R.id.app_bar_bluetooth).setEnabled(true);
                             getMenu().findItem(R.id.app_bar_bluetooth).setIcon(R.drawable.ic_bluetooth_connected);
                             getMenu().findItem(R.id.app_bar_bluetooth).setTooltipText(getString(R.string.disconnect));
@@ -385,10 +369,12 @@ public class MainActivity extends AppCompatActivity {
 
                 if (item.getActionView().getRotation() % 180 != 0) return true;
 
+                item.setEnabled(false);
                 ObjectAnimator rotationAnimator = ObjectAnimator.ofFloat(item.getActionView(), "rotation", item.getActionView().getRotation(), item.getActionView().getRotation()+180f);
                 rotationAnimator.setDuration(300);
                 rotationAnimator.setInterpolator(new LinearInterpolator());
                 rotationAnimator.start();
+                new Handler(Looper.getMainLooper()).postDelayed(() -> item.setEnabled(true), 300);
 
                 direction = !direction;
 
@@ -443,16 +429,16 @@ public class MainActivity extends AppCompatActivity {
         private static final int DOUBLE_CLICK_TIME_THRESHOLD = 250; // ms
         private final static long CLICK_TIME_THRESHOLD = 200; //ms
         private final static int SEND_INTERVAL = 100; //ms
-        private final Handler sendingHandler = new Handler(Looper.myLooper());
+        private final Handler sendingHandler = new Handler(Looper.getMainLooper());
         private final Runnable sendingLoop = new Runnable() {
             @Override
             public void run() {
-                mBluetoothService.send(new byte[]{(byte)power});
+                mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
                 sendingHandler.postDelayed(this, SEND_INTERVAL); // Run the task again after 100 milliseconds
             }
         };
 
-        private final Handler clickHandler = new Handler(Looper.myLooper());
+        private final Handler clickHandler = new Handler(Looper.getMainLooper());
         private final Runnable connectDevice = () -> connectionController();
 
         @Override
@@ -509,7 +495,7 @@ public class MainActivity extends AppCompatActivity {
                     //send power and reset display text
                     binding.driveScreenControlsGradient.setVisibility(View.GONE);
                     binding.driveScreenControlsNeutral.setText(R.string.drag_to_drive);
-                    mBluetoothService.send(new byte[]{(byte)power});
+                    mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
 
                     //stop sending loop
                     sendingHandler.removeCallbacks(sendingLoop);
@@ -572,7 +558,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //send power and update display
                     binding.driveScreenControlsNeutral.setText(String.valueOf(power));
-                    mBluetoothService.send(new byte[]{(byte)power});
+                    mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
                     //Integer.toBinaryString(power).replaceFirst("^.*(.{8})$","$1")
 
                     //start/reset sending loop

@@ -29,11 +29,11 @@ import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
+import com.glapp.data.Packet;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -73,11 +73,6 @@ public class BluetoothService extends Service {
     private CommunicationThread mCommunicationThread;
     private State mState, mNewState;
     private Handler mHandler;
-
-    private interface MessageStructure {
-        char NODE_MASTER = 0x01;
-        char NODE_SLAVE = 0x02;
-    }
 
     public interface MSG_WHAT {
         int STATUS = 0;
@@ -353,7 +348,7 @@ public class BluetoothService extends Service {
         }
     }
 
-    public void send(byte[] message) {
+    public void send(Packet packet) {
         if (inOfflineMode()) return;
 
         if (!isEnabled()) return;
@@ -363,18 +358,7 @@ public class BluetoothService extends Service {
             return;
         }
 
-        if (message.length > 255) {
-            Log.e(TAG, "Message too long");
-            return;
-        }
-
-        //INFO message structure: <node type><message length><message>
-        byte[] bytes = new byte[message.length + 2];
-        bytes[0] = MessageStructure.NODE_SLAVE;
-        bytes[1] = (byte) message.length;
-        System.arraycopy(message, 0, bytes, 2, message.length);
-
-        mCommunicationThread.write(bytes);
+        mCommunicationThread.write(packet);
     }
 
     IntentFilter filter = null;
@@ -544,49 +528,37 @@ public class BluetoothService extends Service {
             // Keep listening to the InputStream until an exception occurs.
             while (true) {
                 try {
-                    byte[] mmBuffer = new byte[54];
-                    int numBytes = mmInStream.read(mmBuffer);
+                    byte crc = (byte) mmInStream.read();
+                    byte flags = (byte) mmInStream.read();
+                    byte payloadLength = (byte) mmInStream.read();
+                    byte[] buffer = new byte[3 + payloadLength];
+                    int payloadLengthRead = mmInStream.read(buffer, 3, payloadLength);
+                    buffer[0] = crc;
+                    buffer[1] = flags;
+                    buffer[2] = payloadLength;
 
-                    if (numBytes < 2) {
-                        Log.e(TAG, "Message too short");
+                    if (payloadLengthRead != payloadLength) {
+                        Log.e(TAG, "Invalid packet received (payload length mismatch)");
                         continue;
                     }
 
-                    if (mmBuffer[0] != BluetoothService.MessageStructure.NODE_MASTER) {
-                        Log.e(TAG, "Unknown message received (wrong node type)");
+                    Packet packet = new Packet(buffer);
+
+                    if (!packet.isCRCValid()) {
+                        Log.e(TAG, "Invalid packet recieved (CRC mismatch)");
+                        continue;
+                    }
+
+                    if (packet.getSource() != Packet.Source.NODE_MASTER) {
+                        Log.e(TAG, "Unknown message received (wrong source)");
                         //Toast.makeText(MainActivity.this, str, Toast.LENGTH_SHORT).show();
                         continue;
                     }
 
-                    // Payload length must be 54 bytes (2 bytes for header, 52 bytes for data)
-                    if (mmBuffer[1] != numBytes - 2 || numBytes != 54) {
-                        Log.e(TAG, "Message payload length mismatch");
-                        continue;
-                    }
-
-                    int startIndex = 2, dataIndex = 0;
-
-                    ByteBuffer buffer = ByteBuffer.wrap(mmBuffer).order(ByteOrder.LITTLE_ENDIAN);
-                    MetricData metricData = new MetricData();
-                    metricData.tempMosfet = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.tempMotor = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.avgMotorCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.avgInputCurrent = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.dutyCycleNow = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.rpm = buffer.getInt(startIndex + dataIndex++ * 4);
-                    metricData.inpVoltage = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.ampHours = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.ampHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.wattHours = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.wattHoursCharged = buffer.getFloat(startIndex + dataIndex++ * 4);
-                    metricData.tachometer = buffer.getInt(startIndex + dataIndex++ * 4);
-                    metricData.tachometerAbs = buffer.getInt(startIndex + dataIndex++ * 4);
-
-                    // Send the obtained bytes to the UI activity.
-                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, metricData).sendToTarget();
+                    mHandler.obtainMessage(MSG_WHAT.MESSAGE_RECEIVED, packet).sendToTarget();
                 } catch (IOException e) {
                     mHandler.obtainMessage(MSG_WHAT.STATUS, BluetoothService.State.DISCONNECTED).sendToTarget();
-                    Log.d(TAG, "Input stream was disconnected", e);
+                    Log.i(TAG, "Input stream was disconnected", e);
                     break;
                 }
             }
@@ -595,13 +567,13 @@ public class BluetoothService extends Service {
         /**
          * Write to output stream,
          * Called to send data to the remote device
-         * @param bytes bytes to write
+         * @param packet packet bytes to write
          */
-        public void write(byte[] bytes) {
+        public void write(Packet packet) {
             try {
-                mmOutStream.write(bytes);
+                mmOutStream.write(packet.getBuffer());
                 // Share the sent message with the UI activity.
-                mHandler.obtainMessage(MSG_WHAT.MESSAGE_SENT, bytes).sendToTarget();
+                mHandler.obtainMessage(MSG_WHAT.MESSAGE_SENT, packet).sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Error occurred when sending data", e);
 
