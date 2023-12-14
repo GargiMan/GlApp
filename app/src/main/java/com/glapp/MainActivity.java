@@ -256,6 +256,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+
+        if (mBluetoothService != null) {
+            if (mBluetoothService.isConnected()) {
+                sendingHandler.removeCallbacks(sendingLoop);
+                controlPacket.updatePayload(new ControlData(direction, 0));
+                mBluetoothService.send(controlPacket);
+            }
+        }
+    }
+
+    @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
@@ -430,24 +443,27 @@ public class MainActivity extends AppCompatActivity {
 
     private static final double START_DEAD_ZONE = 0.1; // 10% of power is start dead zone (power 10 and lower is 0)
 
+    int power;
+    private final static int SEND_INTERVAL = 100; //ms
+    final Packet controlPacket = new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL);
+    private final Handler sendingHandler = new Handler(Looper.getMainLooper());
+    private final Runnable sendingLoop = new Runnable() {
+        @Override
+        public void run() {
+            controlPacket.updatePayload(new ControlData(direction, power));
+            mBluetoothService.send(controlPacket);
+            sendingHandler.postDelayed(this, SEND_INTERVAL); // Run the task again after 100 milliseconds
+        }
+    };
+
     private final View.OnTouchListener driveController = new View.OnTouchListener() {
 
-        int power;
+
         private boolean started = false;
         private float touchPosStart, touchPosNow;
         private long touchTimeStart, touchTimeFirst;
         private static final int DOUBLE_CLICK_TIME_THRESHOLD = 250; // ms
         private final static long CLICK_TIME_THRESHOLD = 200; //ms
-        private final static int SEND_INTERVAL = 100; //ms
-        private final Handler sendingHandler = new Handler(Looper.getMainLooper());
-        private final Runnable sendingLoop = new Runnable() {
-            @Override
-            public void run() {
-                mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
-                sendingHandler.postDelayed(this, SEND_INTERVAL); // Run the task again after 100 milliseconds
-            }
-        };
-
         private final Handler clickHandler = new Handler(Looper.getMainLooper());
         private final Runnable connectDevice = () -> connectionController();
 
@@ -502,13 +518,15 @@ public class MainActivity extends AppCompatActivity {
                     started = false;
                     //Log.d(TAG,"start=" + touchPosStart + ", now=" + touchPosNow + ", power=" + power);
 
+                    //stop sending loop
+                    sendingHandler.removeCallbacks(sendingLoop);
+
                     //send power and reset display text
                     binding.driveScreenControlsGradient.setVisibility(View.GONE);
                     binding.driveScreenControlsNeutral.setText(R.string.drag_to_drive);
-                    mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
+                    controlPacket.updatePayload(new ControlData(direction, power));
+                    mBluetoothService.send(controlPacket);
 
-                    //stop sending loop
-                    sendingHandler.removeCallbacks(sendingLoop);
                     break;
                 case MotionEvent.ACTION_MOVE:
 
@@ -566,14 +584,14 @@ public class MainActivity extends AppCompatActivity {
                     //round power (reduce power wobble)
                     power = (int)(Math.round(power / 10.0) * 10);
 
+                    //start/reset sending loop
+                    sendingHandler.removeCallbacks(sendingLoop);
+                    sendingHandler.postDelayed(sendingLoop, SEND_INTERVAL);
+
                     //send power and update display
                     binding.driveScreenControlsNeutral.setText(String.valueOf(power));
                     mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONTROL, new ControlData(direction, power)));
                     //Integer.toBinaryString(power).replaceFirst("^.*(.{8})$","$1")
-
-                    //start/reset sending loop
-                    sendingHandler.removeCallbacks(sendingLoop);
-                    sendingHandler.post(sendingLoop);
                     break;
                 default:
                     break;
