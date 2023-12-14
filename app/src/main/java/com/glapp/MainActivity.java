@@ -27,10 +27,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.preference.PreferenceManager;
 
+import com.glapp.data.ConfigData;
 import com.glapp.data.ControlData;
 import com.glapp.data.MetricsData;
 import com.glapp.data.Packet;
-import com.glapp.data.Packet.*;
+import com.glapp.data.Packet.Command;
+import com.glapp.data.Packet.Source;
+import com.glapp.data.Packet.Type;
 import com.glapp.databinding.MainActivityBinding;
 
 import java.util.Set;
@@ -362,6 +365,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.app_bar_lights:
+
+                if (mBluetoothService.isConnected()) {
+                    ConfigData data = new ConfigData();
+                    data.addData(ConfigData.Type.CFG_FRONT_LIGHT, null);
+                    data.addData(ConfigData.Type.CFG_REAR_LIGHT, null);
+                    mBluetoothService.send(new Packet(Type.REQUEST, Source.NODE_SLAVE, Command.CONFIG, data));
+                }
 
                 return true;
 
