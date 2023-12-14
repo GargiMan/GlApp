@@ -21,6 +21,9 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 import androidx.preference.SwitchPreference;
 
+import com.glapp.data.ConfigData;
+import com.glapp.data.Packet;
+
 import java.util.Objects;
 import java.util.Set;
 
@@ -69,6 +72,14 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
 
     @Override
     protected void onPause() {
+        // Send config data to board
+        if (mBluetoothService.isConnected()) {
+            ConfigData data = new ConfigData();
+            data.addData(ConfigData.Type.CFG_MAX_THROTTLE_POWER, new byte[]{(byte) PreferenceManager.getDefaultSharedPreferences(this).getInt("max_throttle_power", 10)});
+            data.addData(ConfigData.Type.CFG_MAX_BRAKE_POWER, new byte[]{(byte) PreferenceManager.getDefaultSharedPreferences(this).getInt("max_brake_power", 10)});
+            mBluetoothService.send(new Packet(Packet.Type.REQUEST, Packet.Source.NODE_SLAVE, Packet.Command.CONFIG, data));
+        }
+
         super.onPause();
         unbindService(mServiceConnection);
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
@@ -90,7 +101,7 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
 
         switch (key) {
             case "board_data":
-                getFragmentPreference(key).setSummary(sharedPreferences.getStringSet(key, null).toString());
+                //getFragmentPreference(key).setSummary(sharedPreferences.getStringSet(key, null).toString());
 
                 // Update board data displayed in offline mode
                 if (sharedPreferences.getBoolean("offline_mode", false)) {
